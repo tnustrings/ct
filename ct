@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+cat $@ | ./cttonw | python3 tangle.py

@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+./cttoorg bla | python3 orgtonw.py 
