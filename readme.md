@@ -9,8 +9,10 @@ here's an example:
 begin a file named foo.py and alias it as foo.
 
 <<foo.py: foo
-   ooh, baby you're a fool to py
-   <<bar>>
+ooh, baby you're a fool to py
+if bar {
+  <<bar>>
+}
 >>
 
 chunk names are written as paths, e.g. foo/bar for the chunk bar in
@@ -18,8 +20,8 @@ the chunk foo. we put some code into the foo/bar chunk and give it
 another child, baz.
 
 <<foo/bar
-   my bar code
-   <<baz>>
+  my bar code
+  <<baz>>
 >>
 
 we can use relative paths and reference the previous chunk via .
@@ -74,21 +76,30 @@ chunks, otherwise you include root-name or alias like above.
 
 ```
 
-if you save this in foo.ct you can extract foo.py and zoo.py via `./ct
-foo.ct`.
+if you save the example above in the file `foo.ct` you can extract
+foo.py and zoo.py by saying `./ct foo.ct`.
 
-codetext isn't supported by editors yet. editors like vs studio,
-sublime and emacs do support the .org format via plugins. in org, the
+codetext isn't supported by editors yet. a related format, .org, is
+supported in vs studio, sublime and emacs via plugins. in .org, the
 opening line of a codechunk is `#+begin_src <language> <chunk
-name/path>` the closing line is `#+end_src`. chunk naming and
-referencing works the same. extract code from org files with `orgct
-mycode.org`. switch between formats with `cttoorg <lang>` and
-`orgtoct`.
+name/path>`. the closing line is `#+end_src`. chunk naming and
+referencing works the same. for the first chunk in the example above,
+this would look like:
+
+```
+#+begin_src python foo.py: foo
+   ooh, baby you're a fool to py
+   <<bar>>
+#+end_src
+```
+
+extract code from .org files with `orgct mycode.org`. switch between
+codetext and .org with `cttoorg <lang>` and `orgtoct`.
 
 ## possible next steps
 
-a ct-plugin for vs code / sublime / emacs or other editor on the basis
-of tangle.py and existing org plugins that infers the programming
-language of a chunk by the file-root it hangs on and syntax-highlights
-accordingly, and that maybe offers to indent code-chunks based on
-their parent chunk.
+a codetext-plugin editor plugin that infers the programming language
+of a chunk by the file-root it hangs on and syntax-highlights
+accordingly might be handy. it could be written on the basis of
+tangle.py and existing org plugins. maybe it could offer to indent
+code-chunks based on their parent chunk.
