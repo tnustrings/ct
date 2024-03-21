@@ -71,16 +71,17 @@ we open a second file, named zoo.py:
 >>
 
 if there's only one root-file in the codetext and if you don't give
-this file an alias, leave out its name when referring to child
-chunks, otherwise you include root-name or alias like above.
+this file an alias, leave out its name when referring to child chunks,
+otherwise you include the root-name or alias when referring to the
+children like above.
 
 ```
 
 if you save the example above in the file `foo.ct` you can extract
 foo.py and zoo.py by saying `./ct foo.ct`.
 
-codetext isn't supported by editors yet. a related format, .org, is
-supported in vs studio, sublime and emacs via plugins. in .org, the
+codetext isn't supported by editors (yet). a related format, .org, is
+supported by vs studio, sublime and emacs via plugins. in .org, the
 opening line of a codechunk is `#+begin_src <language> <chunk
 name/path>`. the closing line is `#+end_src`. chunk naming and
 referencing works the same. for the first chunk in the example above,
@@ -98,8 +99,8 @@ codetext and .org with `cttoorg <lang>` and `orgtoct`.
 
 ## possible next steps
 
-a codetext-plugin editor plugin that infers the programming language
+a codetext editor plugin that infers the programming language
 of a chunk by the file-root it hangs on and syntax-highlights
-accordingly might be handy. it could be written on the basis of
+it accordingly might be handy. it could be written on the basis of
 tangle.py and existing org plugins. maybe it could offer to indent
 code-chunks based on their parent chunk.
