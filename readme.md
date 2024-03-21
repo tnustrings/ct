@@ -5,6 +5,7 @@ embedded in text like graphics or images embedded in a document.
 
 here's an example:
 
+```
 begin a file named foo.py and alias it as foo.
 
 <<foo.py: foo
@@ -70,6 +71,8 @@ we open a second file, named zoo.py:
 if there's only one root-file in the codetext and if you don't give
 this file an alias, leave out its name when referring to child
 chunks, otherwise you include root-name or alias like above.
+
+```
 
 if you save this in foo.ct you can extract foo.py and zoo.py via `./ct
 foo.ct`.
