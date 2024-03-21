@@ -82,7 +82,7 @@ foo.py and zoo.py by saying `./ct foo.ct`.
 
 codetext isn't supported by editors (yet). a related format, .org, is
 supported by [vs
-studio](https://marketplace.visualstudio.com/items?itemName=tootone.org-mode),
+code](https://marketplace.visualstudio.com/items?itemName=tootone.org-mode),
 [sublime](https://packagecontrol.io/packages/orgmode) and
 [emacs](https://orgmode.org/) via plugins. in .org, the opening line
 of a codechunk is `#+begin_src <language> <chunk name/path>`. the
