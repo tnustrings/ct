@@ -81,11 +81,13 @@ if you save the example above in the file `foo.ct` you can extract
 foo.py and zoo.py by saying `./ct foo.ct`.
 
 codetext isn't supported by editors (yet). a related format, .org, is
-supported by vs studio, sublime and emacs via plugins. in .org, the
-opening line of a codechunk is `#+begin_src <language> <chunk
-name/path>`. the closing line is `#+end_src`. chunk naming and
-referencing works the same. for the first chunk in the example above,
-this would look like:
+supported by [vs
+studio](https://marketplace.visualstudio.com/items?itemName=tootone.org-mode),
+[sublime](https://packagecontrol.io/packages/orgmode) and
+[emacs](https://orgmode.org/) via plugins. in .org, the opening line
+of a codechunk is `#+begin_src <language> <chunk name/path>`. the
+closing line is `#+end_src`. chunk naming and referencing works the
+same. for the first chunk in the example above, this would look like:
 
 ```
 #+begin_src python foo.py: foo
