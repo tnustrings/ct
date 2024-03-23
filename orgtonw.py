@@ -32,7 +32,7 @@ for line in sys.stdin:
         # add << >>= if missing (for ft and org)
         if not re.match(r"<<.*>>=", line):
             line = "<<" + line[0:len(line)-1] + ">>=\n" # the substring cuts off the \n at the end of the line
-    elif re.match(r"#\+end_src", line) or re.match(r"#\+e\s*", line) or re.match(r"^<#\n$", line):
+    elif re.match(r"#\+end_src", line) or re.match(r"#\+e\s+", line) or re.match(r"^<#\n$", line):
         # we're not in source anymore
         insrc = False
         # @ marks the beginning of doku
