@@ -275,7 +275,7 @@ def pwd(node):
 def createadd(name, parent):
 
     node = Node(name, parent)
-    #print(f"createadd: {pwd(node)}")
+    # print(f"createadd: {pwd(node)}")
     
     # if we're creating a ghost node
     if node.name == GHOST:
@@ -335,7 +335,7 @@ def getroot(path):
         # return this one root along with the whole path
         only = roots[list(roots.keys())[0]]
         # when we're at the root chunk itsself, we want it out of the path in any case
-        if len(p) == 1 and p[0] in roots or p[0] in filename:
+        if len(p) == 1 and (p[0] in roots or p[0] in filename):
             return (only, "")
         elif p[0] in filename: # the first element is aliasing the one root, keep it
             return (only, "/".join(p[1:]))
