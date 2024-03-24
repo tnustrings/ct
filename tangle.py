@@ -207,7 +207,25 @@ def cdmk(node, path):
         (node, path) = getroot(path)
         
     elems = path.split("/")
+    search = False # search for the next name
     for elem in elems:
+        # do we start a sub-tree search?
+        if elem == "*":
+            search = True
+            continue
+        if search == True:
+            # search for the current name
+            search = False # reset
+            res = []
+            bfs(node, elem, res) # search elem in node's subtree
+            if len(res) > 1:
+                print(f"error: more than one nodes named {elem} in sub-tree of {pwd(node)}")
+                exit
+            else:
+                node = res[0]
+            continue
+        
+        # standard:
         # walk one step
         walk = cdone(node, elem)
         # if child not there, create it
@@ -216,6 +234,18 @@ def cdmk(node, path):
         node = walk
 
     return node # the node we ended up at
+
+# bfs breath-first searches for all nodes named 'name' starting from 'node' and puts them in 'out'
+def bfs(node, name, out):
+    #    print(f"bfs {node}")
+    if node.name == name:
+        out.append(node)
+    # search the node's childs
+    for childname in node.ls():
+        bfs(node.cd[childname], name, out)
+    # do we need to search the gostchilds?
+    for child in node.ghostchilds:
+        bfs(child, name, out)
 
 # cdroot cds back to root. side effect: ghosts are exited
 def cdroot(node):

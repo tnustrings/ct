@@ -1,6 +1,7 @@
 begin a file named foo.py and alias it as foo.
 
 <<foo.py: foo
+   <<import>>
    ooh, baby you're a fool to py
    <<bar>>
 >>
@@ -11,6 +12,7 @@ foo. we put some code into the foo/bar chunk.
 <<foo/bar
    my bar code
    <<baz>>
+   <<boz>>
 >>
 
 we can use relative paths and reference the previous chunk via .
@@ -25,10 +27,17 @@ this would be baz' absolute path:
    and it makes me wonder why
 >>
 
-when we don't give a path we append to the previous chunk.
+when we don't give a path we append to the same chunk.
 
 <<
    still my baz code.
+>>
+
+if we would like to change to baz's sibling boz now, we could say
+../boz, foo/bar/boz, or foo/*/boz, if boz's name is unique in foo.
+
+<<foo/*/boz
+   in boz
 >>
 
 if there's a loop etc, and we would like the next unnamed chunk in the
