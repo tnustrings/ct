@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+# ctscripts makes a directory containing codetext scripts
+
+CTPATH="$HOME/codetext" # path of your codetext
+
+# make directory for codetext scripts
+mkdir ct
+cp "$CTPATH/tangle.py" "$CTPATH/cttoorg"* "$CTPATH/orgtoct"* "$CTPATH/cttonw" "$CTPATH/orgtonw.py" ct
+# make the scripts executable
+chmod u+x ct/*
