@@ -1,3 +1,4 @@
 #!/usr/bin/bash
+# usage: cttonw file
 pw0="$(dirname "$0")"
-$pw0/cttoorg bla | python3 $pw0/orgtonw.py 
+cat $@ | $pw0/cttoorg bla | python3 $pw0/orgtonw.py 

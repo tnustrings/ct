@@ -1,3 +1,4 @@
 #!/usr/bin/bash
+# usage: ct file
 pw0="$(dirname "$0")"
-$pw0/cttonw | python3 $pw0/tangle.py
+cat $@ | $pw0/cttonw | python3 $pw0/tangle.py

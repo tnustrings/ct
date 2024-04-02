@@ -1,2 +1,4 @@
 #!/usr/bin/bash
-python3 orgtoct.py
+# usage: orgtoct < file
+pw0="$(dirname "$0")"
+python3 $pw0/orgtoct.py

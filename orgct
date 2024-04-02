@@ -1,3 +1,4 @@
 #!/usr/bin/bash
-
-cat $@ | python3 orgtonw.py | python3 tangle.py
+# usage: orgct file
+pw0="$(dirname "$0")"
+cat $@ | python3 $pw0/orgtonw.py | python3 $pw0/tangle.py
