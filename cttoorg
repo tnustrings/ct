@@ -1,2 +1,3 @@
 #!/usr/bin/bash
-python3 cttoorg.py bla | python3 orgtonw.py 
+pw0="$(dirname "$0")"
+python3 $pw0/cttoorg.py bla

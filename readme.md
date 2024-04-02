@@ -105,12 +105,11 @@ same. for the first chunk in the example above, this would look like:
 extract code from .org files with `orgct mycode.org`. switch between
 codetext and .org with `cttoorg <lang>` and `orgtoct`.
 
-to get the codetext scripts into a directory you develop in, set
-$CTPATH in `ctscripts` to your codetext dir, say `chmod u+x
-ctscripts` and put the codetext dir on your $PATH. then in your target
-directory you can say `ctscripts`. this creates a folder named
-`ct`. in your makefile or on the commandline you can then say `./ct/ct
-myprogram.ct`.
+to get a folder with the codetext scripts in the directory you develop
+in say `chmod u+x ctscripts` and put the codetext dir on your
+$PATH. then in your develop directory you can say `ctscripts`. this
+creates a folder named `ct`. in your makefile or on the commandline
+you can then say `./ct/ct myprogram.ct`.
 
 ## possible next steps
 

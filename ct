@@ -1,3 +1,3 @@
 #!/usr/bin/bash
-
-cat $@ | ./cttonw | python3 tangle.py
+pw0="$(dirname "$0")"
+$pw0/cttonw | python3 $pw0/tangle.py
