@@ -1,7 +1,7 @@
 # codetext
 
 codetext is a way of writing computer programs where your code is
-embedded in text like graphics or images embedded in a document.
+embedded in text like graphics or images floating in a document.
 
 here's an example:
 
