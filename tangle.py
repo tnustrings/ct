@@ -125,6 +125,8 @@ GHOST = "#" # name of ghost nodes
 # chunks that are not. 
 def assemble(node, leadingspace):
 
+    #print(f"assemble {node.name}, aim leadingspace: '{leadingspace}'")
+
     if node.name == GHOST:
         lnp = lastnamed(node)
         
@@ -137,9 +139,10 @@ def assemble(node, leadingspace):
     """
     # leading space already there
     alreadyspace = re.search(r"^\s*", lines[0]).group()
+    #print(f"alreadyspace: '{alreadyspace}'")
     # space that needs to be added
     addspace = leadingspace.replace(alreadyspace, "", 1) # 1: replace once
-
+    #print(f"addspace: '{addspace}'")
     out = ""
     ighost = 0 
     for line in lines:
@@ -170,7 +173,9 @@ openghost = None # if the last chunk opened a ghostnode, its this one
 def put(path, text):
     global openghost
     global currentnode
-    
+
+    # print(f"put {path}")
+
     #if currentnode != None:
     #    print(f"current node in put: {pwd(currentnode)}")
 
@@ -179,9 +184,11 @@ def put(path, text):
 
     # remove leading and trailing /
     path = path.strip("/") 
-        
+
     # if at file name, take only file name
     if re.match(r"\w+\.\w+", path): # todo: search for ": "
+    #if re.match(r"\.", path): # todo: search for ": "
+        #print("at filename")
         parts = path.split(": ")
         path = parts[0]
 
@@ -412,7 +419,9 @@ for line in lines:
     
     name = getname(line)
 
-    if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
+    #if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
+    if re.match(r"^.*\w+\.\w+[\w :]*$", name): # apparently the regex must span the entire string?
+        #print(f"at root: {name}")
         parts = name.split(": ")
         fname = parts[0]
         # create root for this file
@@ -430,7 +439,7 @@ for line in lines:
 if len(roots) == 0:
     exit
 
-# print(roots)
+#print(f"roots: {roots}")
 
 """ now that we got the roots, we can start putting in the chunks. """
 

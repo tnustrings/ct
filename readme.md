@@ -111,6 +111,14 @@ $PATH. then in your develop directory you can say `ctscripts`. this
 creates a folder named `ct`. in your makefile or on the commandline
 you can then say `./ct/ct myprogram.ct`.
 
+## issues
+
+codetext takes a chunk's indent from the first chunk line, and tries
+to fill up accordingly. if you write chunks that are already indented,
+take care that the first line is indented like the rest of the chunk,
+so that codetext doesn't think it needs to indent when it actually
+doesn't need to.
+
 ## possible next steps
 
 a codetext editor plugin that infers the programming language
