@@ -1,6 +1,6 @@
 # tangle.py: tangle with chunkname paths
-# usage: cat file.nw | python3 tangleb.py
-#        cat file.ct | cttonw | python3 tangleb.py
+# usage: cat file.nw | python3 tangle.py
+#        cat file.ct | cttonw | python3 tangle.py
 
 # chunkname paths work like nested directories: for example, if the name <<baz>> appears in the chunk <<bar>>, it's referenced as <<bar/baz>>=
 # <<.>>= references the previous codechunk, <<./foo>>= references the <<foo>> tag in the previous codechunk
@@ -77,6 +77,7 @@ go back via ..
 
 # imports
 
+import os
 import re
 import sys
 
@@ -407,9 +408,11 @@ lines = [] # input lines
 for line in sys.stdin:
     lines.append(line)
 
-"""
-maybe we need one pass of lines to get all root nodes, so that we know beforehand if there's one or more files. otherwise we keep the first path element of chunk-paths until we arrive at the second file and drop it afterwards, that wouldn't be so good.
-"""
+""" maybe we need one pass of lines to get all root nodes, so that we
+know beforehand if there's one or more files. otherwise we keep the
+first path element of chunk-paths until we arrive at the second file
+and drop it afterwards, that wouldn't be so good.  """
+
 roots = {}
 filename = {} # from alias to filename
 for line in lines:
@@ -470,11 +473,30 @@ where we can access them.  """
 
 cdroot(currentnode)
 
+# comment markers for programming languages, edit if needed for other languages
+commentmarker = {
+    ".bash": "#",
+    ".c": "//",
+    ".go": "//",
+    ".java": "//",
+    ".js": "//",
+    ".py": "#",
+    ".sh": "#",
+    ".tex": "%"
+}
+
 """ at the end, write all files (each file is a root) """
 for filename in roots:
-    # todo: add don't edit comment like before
+    # add a don't edit comment
+    ext = os.path.splitext(filename)[1]
+    out = ""
+    # do we know the comment marker for the file's extension?
+    if ext in commentmarker:
+        # then print a 'don't edit' message
+        out += commentmarker[ext] + " this file is generated automatically, please edit the .ct file from which it stems.\n\n"
+        
     # assemble the code
-    out = assemble(roots[filename], "")
+    out += assemble(roots[filename], "")
     # printtree(roots[filename])
     # and write it to file
     # print(f"write {filename}")
