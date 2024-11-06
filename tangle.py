@@ -323,7 +323,12 @@ def createadd(name, parent):
     else:
         # we're creating a name node
         
-        """ if the parent is a ghost node, this node could have already been created before with its non-ghost path (an earlier chunk in the codetext might have declared it and put text into it, with children/ghost children, etc), then we move it as a named child from the last named parent to here """
+        """ if the parent is a ghost node, this node could have already been
+        created before with its non-ghost path (an earlier chunk in
+        the codetext might have declared it and put text into it, with
+        children/ghost children, etc), then we move it as a named
+        child from the last named parent to here """
+        
         # if a node with this name is already child of last named parent, move it here
         if parent.name == GHOST:
             namedp = lastnamed(node)
@@ -481,6 +486,7 @@ commentmarker = {
     ".java": "//",
     ".js": "//",
     ".py": "#",
+    ".vb": "'",
     ".sh": "#",
     ".tex": "%"
 }
@@ -502,6 +508,7 @@ for filename in roots:
     # print(f"write {filename}")
     f = open(filename, "w")
     f.write(out)
+
 
 
 

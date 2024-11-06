@@ -4,6 +4,8 @@ pw0="$(dirname "$0")"
 # if two arguments then cat the given file
 if [[ $# == 2 ]]; then
     cat $2 | python3 $pw0/cttoorg.py $1
-else # else read from stdin 
+elif [[ $# == 1 ]]; then # else read from stdin, with or without language name
     python3 $pw0/cttoorg.py $1
+else 
+    python3 $pw0/cttoorg.py 
 fi

@@ -5,7 +5,10 @@ import sys
 import re
 
 # temp: pass the programming language as argument
-lang = sys.argv[1]
+if len(sys.argv) == 2:
+    lang = sys.argv[1]
+else:
+    lang = "bla"
 
 # we are not in source
 insrc = False
@@ -19,8 +22,8 @@ for line in sys.stdin:
         # avoid adding leading blanks to this line
         print(line, end="")
         continue
-    # we leave a src block
-    if insrc and re.match("^>>$", line):
+    # we leave a src block, >> or />>
+    if insrc and re.match("^\/?>>$", line):
         insrc = False
         # replace the >> with the #+end_src
         line = "#+end_src\n"

@@ -119,6 +119,11 @@ take care that the first line is indented like the rest of the chunk,
 so that codetext doesn't think it needs to indent when it actually
 doesn't need to.
 
+fix: allow dashes in filename (-)
+
+fix: problem: if files should be written without extensions (.txt etc)
+in filename, how to tell their roots? is it possible?
+
 ## possible next steps
 
 a codetext editor plugin that infers the programming language
