@@ -9,6 +9,8 @@
 
 # if there are multiple filenames, they can be aliased: <<program.py: program>>= and then referred to as <<program/codechunk>>=
 
+# note that each chunkname path is assumed to be absolute unless preceeded with . or empty (on the shell it's the other way round).
+
 """example input (codetext):
 
 to tangle this codetext example, copy it to example.ct and say `cat
@@ -101,7 +103,8 @@ class Node:
     
 # isdeclaration returns true if line is the declaration line of a code chunk
 def isdeclaration(line):
-    return re.match(r".*<<.*>>=", line)
+    # return re.match(r".*<<.*>>=", line)
+    return re.match(r"^<<[^\>]*$", line)
 
 # isname returns true if line is the referencing name line of a code chunk
 def isname(line):
@@ -109,12 +112,16 @@ def isname(line):
 
 # isend says if the line is the end of a code chunk
 def isend(line):
-    return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
+    # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
+    return re.match(r"^>>$", line)
 
 # getname gets the chunkname from a declaration or in-chunk line
 def getname(line):
     name = re.sub(r".*<<", "", line)
-    name = re.sub(r">>.*\n?", "", name) # also works for chunk declarations
+    name = re.sub(r">>.*", "", name) # chunk declarations do not have this
+    name = re.sub("\n$", "", name)
+    # print(f"getname({line}): '{name}'")
+
     return name
 
 GHOST = "#" # name of ghost nodes
@@ -147,6 +154,7 @@ def assemble(node, leadingspace):
 
             # remember leading whitespace
             childleadingspace = re.search(r"^\s*", line).group() + addspace
+            # print("#getname 1")
             name = getname(line)
             if name == ".":   # assemble a ghost-child
                 out += assemble(node.ghostchilds[ighost], childleadingspace) + "\n"
@@ -178,10 +186,14 @@ def put(path, text):
     #    print(f"openghost: {pwd(openghost)}")
 
     # remove leading and trailing /
+
+    # its ok to remove the leading / because roots have already been
+    # identified and to start a relative path would need to be made
+    # explicit with .
     path = path.strip("/") 
         
     # if at file name, take only file name
-    if re.match(r"\w+\.\w+", path): # todo: search for ": "
+    if re.match(r".*: .*", path): 
         parts = path.split(": ")
         path = parts[0]
 
@@ -200,7 +212,7 @@ def put(path, text):
 # cdmk walks the path from node and creates nodes if needed along the way.
 # it returns the node it ended up at
 def cdmk(node, path):
-    # if path not relative, start from root
+    # if path not relative, start from a root
     if not (re.match(r"^\.", path) or path == ""):
         # we may switch roots here. before that, we need to exit open ghosts. cdroot does this along the way
         cdroot(node)
@@ -339,6 +351,7 @@ def concatcreatechilds(node, text):
         if not isname(line):
             continue
         """ why do we create the children when concating text? maybe because here we know where childs of ghost nodes end up in the tree. """
+        # print("#getname 2")
         name = getname(line)
         if name == ".": # ghost child
             # if we're not at the first ghost chunk here
@@ -357,21 +370,24 @@ def lastnamed(node):
     if node.name != GHOST: return node
     return lastnamed(node.cd[".."])
 
+filenames = {} # from alias to filenames
+roots = {}
+
 # getroot returns root referenced by path and chops off root in path, except if there's only one un-aliased root.
 def getroot(path):
     p = path.split("/")
-    # if only one root
+    # if only one root, it can be made implicit in the path names
     if len(roots) == 1:
         # return this one root along with the whole path
         only = roots[list(roots.keys())[0]]
         # when we're at the root chunk itsself, we want it out of the path in any case
-        if len(p) == 1 and (p[0] in roots or p[0] in filename):
+        if len(p) == 1 and (p[0] in roots or p[0] in filenames):
             return (only, "")
-        elif p[0] in filename: # the first element is aliasing the one root, keep it
+        elif p[0] in filenames: # the first element is aliasing the one root, keep it
             return (only, "/".join(p[1:]))
         else:
             return (only, path)
-    else:
+    else: # the only root is omitted in path
         # return the root as referenced by the first path-part, and the rest of the path
         return (resolveroot(p[0]), "/".join(p[1:]))
 
@@ -379,8 +395,8 @@ def getroot(path):
 def resolveroot(name):
     if name in roots: # name is a filename
         return roots[name]
-    elif name in filename: # name is an alias
-        return roots[filename[name]]
+    elif name in filenames: # name is an alias
+        return roots[filenames[name]]
     print(f"error: root name '{name}' not found")
     exit
 
@@ -392,85 +408,90 @@ def printtree(node):
         printtree(node.cd[name])
     for child in node.ghostchilds:
         printtree(child)
+        
 
-## main
-
-lines = [] # input lines
-# remember line lines for iterating it twice
-for line in sys.stdin:
-    lines.append(line)
-
-"""
-maybe we need one pass of lines to get all root nodes, so that we know beforehand if there's one or more files. otherwise we keep the first path element of chunk-paths until we arrive at the second file and drop it afterwards, that wouldn't be so good.
-"""
-roots = {}
-filename = {} # from alias to filename
-for line in lines:
-    # only look at declaration lines
-    if not isdeclaration(line):
-        continue
+## main runs codetext for text
+def main(f):
+    global filenames
     
-    name = getname(line)
+    lines = f.readlines() # readlines keeps the \n for each line, text concat in nodes relies on that
 
-    if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
-        parts = name.split(": ")
-        fname = parts[0]
-        # create root for this file
-        roots[fname] = Node(fname, None)
-        if len(parts) > 1:
-            alias = parts[1]
-            # alias already used for other file
-            if alias in filename and filename[alias] != fname:
-                print(f"error: alias {alias} already references file {filename[alias]}")
-                exit
-            # alias it
-            filename[alias] = fname
+    """
+    maybe we need one pass of lines to get all root nodes, so that we know beforehand if there's one or more files. otherwise we keep the first path element of chunk-paths until we arrive at the second file and drop it afterwards, that wouldn't be so good.
+    """
+    for line in lines:
+        # only look at declaration lines
+        if not isdeclaration(line):
+            continue
+        # print("#getname 3")
+        name = getname(line)
 
-""" no files, exit """
-if len(roots) == 0:
-    exit
+        #if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
+        
+        # we're at a root if the name starts with a / and doesn't contain another /
+        if re.match(r"^/[^/]", name):
+            # maybe an alias follows the file name, seperated by ': '
 
-# print(roots)
+            parts = name.split(": ")
 
-""" now that we got the roots, we can start putting in the chunks. """
+            # remove leading slash of root name
+            filename = re.sub("^/+", "", parts[0])
+            
+            #filename = parts[0]
+            # create root for this file
+            roots[filename] = Node(filename, None)
+            if len(parts) > 1:
+                alias = parts[1]
+                # alias already used for other file
+                if alias in filenames and filenames[alias] != filename:
+                    print(f"error: alias {alias} already references file {filenames[alias]}")
+                    exit
+                # alias it
+                filenames[alias] = filename
 
-inchunk = False # are we in a chunk
-chunk = "" # current chunk content
-path = None # current chunk name/path
-for line in lines:
-    if isdeclaration(line): # at the beginning of chunk remember its name
-        inchunk = True 
-        path = getname(line)
-    elif isend(line): # at the end of chunk save chunk
-        inchunk = False
-        #print(f"calling put for: {path}")
-        put(path, chunk)
-        # reset variables
-        chunk = ""
-        path = None
-        #print("")
-    elif inchunk: # when we're in chunk remember line
-        chunk += line
-    #else:
-    #    print(line, end="") # for debugging
+    """ no files, exit """
+    if len(roots) == 0:
+        exit
+
+    # print(roots)
+
+    """ now that we got the roots, we can start putting in the chunks. """
+
+    inchunk = False # are we in a chunk
+    chunk = "" # current chunk content
+    path = None # current chunk name/path
+    for line in lines:
+        if isdeclaration(line): # at the beginning of chunk remember its name
+            inchunk = True
+            # print("#getname 4")
+            path = getname(line)
+        elif isend(line): # at the end of chunk save chunk
+            inchunk = False
+            #print(f"calling put for: {path}")
+            put(path, chunk)
+            # reset variables
+            chunk = ""
+            path = None
+            #print("")
+        elif inchunk: # when we're in chunk remember line
+            chunk += line
+        #else:
+        #    print(line, end="") # for debugging
 
 
-""" in the end we need to exit all un-exited ghost nodes so that their
-named children end up as the named children of the last named parent
-where we can access them.  """
+    """ in the end we need to exit all un-exited ghost nodes so that their
+    named children end up as the named children of the last named parent
+    where we can access them.  """
 
-cdroot(currentnode)
+    cdroot(currentnode)
 
-""" at the end, write all files (each file is a root) """
-for filename in roots:
-    # todo: add don't edit comment like before
-    # assemble the code
-    out = assemble(roots[filename], "")
-    # printtree(roots[filename])
-    # and write it to file
-    # print(f"write {filename}")
-    f = open(filename, "w")
-    f.write(out)
-
-
-
+    """ at the end, write all files (each file is a root) """
+    for filename in roots:
+        # todo: add don't edit comment like before
+        # assemble the code
+        out = assemble(roots[filename], "")
+        # printtree(roots[filename])
+        # and write it to file
+        # print(f"write {filename}")
+        f = open(filename, "w")
+        f.write(out)
