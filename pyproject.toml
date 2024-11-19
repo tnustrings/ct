@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"] # list of packages needed to build your package
+build-backend = "hatchling.build" # name of the python object that frontends use to perform the build
+
+[project]
+name = "ct"
+version = "0.0.1"
+authors = [
+  { name="tnustrings", email="tnustrings@gmail.com"}
+]
+description = "code with text"
+readme = "readme.md"
+requires-python = ">=3.8"
+dependencies = [
+  # you could pyodbc or sqlite3 here, but maybe keep it out and let the user install what she needs?
+]
+classifiers = [
+  "Programming Language :: Python :: 3"
+]
+
+# the scripts are entry points directly callable from the command line after install with pip
+[project.scripts]
+ct = "ct:__main__"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ct"]
