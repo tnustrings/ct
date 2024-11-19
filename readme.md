@@ -21,7 +21,7 @@ chunk names are noted as paths, e.g. foo/bar for the chunk bar in
 foo. we put some code into the foo/bar chunk.
 
 <<foo/bar
-   my bar code
+   print("my bar")
    <<baz>>
    <<boz>>
 >>
@@ -29,26 +29,26 @@ foo. we put some code into the foo/bar chunk.
 we can use relative paths and reference the previous chunk via .
 
 <<./baz
-   my baz code
+   my = "baz code"
 >>
 
 this would be baz' absolute path:
 
 <<foo/bar/baz
-   and it makes me wonder why
+   print("and it makes me wonder why")
 >>
 
 when we don't give a path we append to the same chunk.
 
 <<
-   still my baz code.
+   print("still my baz code.")
 >>
 
 if we would like to change to baz's sibling boz now, we could say
 ../boz, foo/bar/boz, or foo/*/boz, if boz's name is unique in foo.
 
 <<foo/*/boz
-   in boz
+   print("in boz")
 >>
 
 if there's a loop etc, and we would like the next unnamed chunk in the
@@ -65,19 +65,19 @@ then the following chunk will be put where the <<.>> tag is and not to
 the end of the chunk.
 
 <<
-   inside the loop
+   print("inside the loop")
 >>
 
 go back via ..
 
 <<..
-   appending to the foo/bar/baz code again
+   print("appending to the foo/bar/baz code again")
 >>
 
 we open a second file, named zoo.py:
 
 <</zoo.py: zoo
-  welcome to the zoo
+  print("welcome to the zoo")
 >>
 
 if there's only one output file in the codetext and if you don't give
