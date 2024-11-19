@@ -86,36 +86,11 @@ chunks, otherwise you include it like above.
 ```
 
 `foo.ct` contains the above example. you can extract `foo.py` and `zoo.py`
-by saying `./ct foo.ct`.
-
-codetext isn't supported by editors (yet). a related format, .org, is
-supported by [vs
-code](https://marketplace.visualstudio.com/items?itemName=tootone.org-mode),
-[sublime](https://packagecontrol.io/packages/orgmode) and
-[emacs](https://orgmode.org/) via plugins. in .org, the opening line
-of a codechunk is `#+begin_src <language> <chunk name/path>`. the
-closing line is `#+end_src`. chunk naming and referencing works the
-same. for the first chunk in the example above, this would look like:
-
-```
-#+begin_src python foo.py: foo
-   ooh, baby you're a fool to py
-   <<bar>>
-#+end_src
-```
-
-extract code from .org files with `orgct mycode.org`. switch between
-codetext and .org with `cttoorg <lang>` and `orgtoct`.
-
-to get a folder with the codetext scripts in the directory you develop
-in say `chmod u+x ctscripts` and put the codetext dir on your
-$PATH. then in your develop directory you can say `ctscripts`. this
-creates a folder named `ct`. in your makefile or on the commandline
-you can then say `./ct/ct myprogram.ct`.
+by saying `ct foo.ct` (after building and installing).
 
 ## build
 
-in the main directory, say
+build with python:
 
 ```
 python3 -m build
@@ -138,9 +113,6 @@ so that codetext doesn't think it needs to indent when it actually
 doesn't need to.
 
 fix: allow dashes in filename (-)
-
-fix: problem: if files should be written without extensions (.txt etc)
-in filename, how to tell their roots? is it possible?
 
 ## possible next steps
 

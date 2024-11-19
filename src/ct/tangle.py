@@ -370,6 +370,9 @@ def lastnamed(node):
     if node.name != GHOST: return node
     return lastnamed(node.cd[".."])
 
+filenames = {} # from alias to filenames
+roots = {}
+
 # getroot returns root referenced by path and chops off root in path, except if there's only one un-aliased root.
 def getroot(path):
     p = path.split("/")
@@ -406,11 +409,11 @@ def printtree(node):
     for child in node.ghostchilds:
         printtree(child)
         
-roots = {}
-filenames = {} # from alias to filenames
 
 ## main runs codetext for text
 def main(f):
+    global filenames
+    
     lines = f.readlines() # readlines keeps the \n for each line, text concat in nodes relies on that
 
     """
@@ -444,7 +447,7 @@ def main(f):
                     print(f"error: alias {alias} already references file {filenames[alias]}")
                     exit
                 # alias it
-                filenames[alias] = fname
+                filenames[alias] = filename
 
     """ no files, exit """
     if len(roots) == 0:
@@ -483,12 +486,12 @@ def main(f):
     cdroot(currentnode)
 
     """ at the end, write all files (each file is a root) """
-    for filenames in roots:
+    for filename in roots:
         # todo: add don't edit comment like before
         # assemble the code
-        out = assemble(roots[filenames], "")
+        out = assemble(roots[filename], "")
         # printtree(roots[filename])
         # and write it to file
         # print(f"write {filename}")
-        f = open(filenames, "w")
+        f = open(filename, "w")
         f.write(out)

@@ -1,10 +1,12 @@
 begin a file named foo.py and alias it as foo.
 
-<<foo.py: foo
+<</foo.py: foo
    <<import>>
    ooh, baby you're a fool to py
    <<bar>>
 >>
+
+filenames that get written out need to be preceeded with a /.
 
 chunk names are noted as paths, e.g. foo/bar for the chunk bar in
 foo. we put some code into the foo/bar chunk.
@@ -65,7 +67,7 @@ go back via ..
 
 we open a second file, named zoo.py:
 
-<<zoo.py: zoo
+<</zoo.py: zoo
   welcome to the zoo
 >>
 
