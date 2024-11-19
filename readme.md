@@ -1,7 +1,9 @@
 # codetext
 
 codetext is a way of writing computer programs where your code is
-embedded in text like graphics or images floating in a document.
+embedded in text like graphics or images floating in a document. it's
+a bit like a jupyter notebook with the addition that code chunks are
+named and you can nest them into one another by referencing the names.
 
 here's an example:
 
@@ -15,10 +17,11 @@ if bar {
 }
 >>
 
-filenames that get written out need to be preceeded with a /.
+the preceeding / in /foo.py marks this as a file-root.
 
-chunk names are noted as paths, e.g. foo/bar for the chunk bar in
-foo. we put some code into the foo/bar chunk.
+chunk names are noted as paths, e.g. the path 'foo/bar' for a chunk
+named 'bar' in the chunk 'foo'. we put some code into the 'foo/bar'
+chunk.
 
 <<foo/bar
    print("my bar")
