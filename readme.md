@@ -8,11 +8,13 @@ here's an example:
 ```
 begin a file named foo.py and alias it as foo.
 
-<<foo.py: foo
+<</foo.py: foo
    <<import>>
    ooh, baby you're a fool to py
    <<bar>>
 >>
+
+filenames that get written out need to be preceeded with a /.
 
 chunk names are noted as paths, e.g. foo/bar for the chunk bar in
 foo. we put some code into the foo/bar chunk.
@@ -73,7 +75,7 @@ go back via ..
 
 we open a second file, named zoo.py:
 
-<<zoo.py: zoo
+<</zoo.py: zoo
   welcome to the zoo
 >>
 
@@ -110,6 +112,22 @@ in say `chmod u+x ctscripts` and put the codetext dir on your
 $PATH. then in your develop directory you can say `ctscripts`. this
 creates a folder named `ct`. in your makefile or on the commandline
 you can then say `./ct/ct myprogram.ct`.
+
+## build
+
+in the main directory, say
+
+```
+python3 -m build
+```
+
+## install
+
+install with pip:
+
+```
+pip install dist/*.whl
+```
 
 ## issues
 
