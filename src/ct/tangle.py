@@ -42,6 +42,10 @@ def isend(line):
     # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
     return re.match(r"^>>$", line)
 
+# isroot says whether the name is a root
+def isroot(name):
+    return re.match(r"^//", name)
+
 # getname gets the chunkname from a declaration or in-chunk line
 def getname(line):
     name = re.sub(r".*<<", "", line)
@@ -105,6 +109,8 @@ openghost = None # if the last chunk opened a ghostnode, its this one
 def put(path, text):
     global openghost
     global currentnode
+
+    # print("put(" + path + ")")
     
     #if currentnode != None:
     #    print(f"current node in put: {pwd(currentnode)}")
@@ -129,9 +135,13 @@ def put(path, text):
         currentnode = openghost
         openghost = None # necessary?
     else:
+        # if the path would need a node to cling to but there isn't noe
+        if currentnode is None and not isroot(path):
+            print(f"error: there's no file to attach '{path}' to, should it start with '//'?")
+            exit
         # go to node, if necessary create it along the way
         currentnode = cdmk(currentnode, path)
-    #print(f"current node after cdmk: {pwd(currentnode)}")
+
     # append the text to node
     concatcreatechilds(currentnode, text)
 
@@ -153,7 +163,7 @@ def cdmk(node, path):
     # if absolute path / go to root
     elif re.match(r"^/", path):
         # we need to exit open ghost nodes. cdroot does this along the way.
-        cdroot(node)
+        node = cdroot(node)
 
     # remove leading / of absolute path
     path = path.strip("/")
@@ -161,6 +171,7 @@ def cdmk(node, path):
     # follow the path
         
     elems = path.split("/")
+
     search = False # search for the next name
     for elem in elems:
         # do we start a sub-tree search?
@@ -181,7 +192,7 @@ def cdmk(node, path):
             else:
                 node = res[0]
             continue
-        
+
         # standard:
         # walk one step
         walk = cdone(node, elem)
@@ -190,6 +201,7 @@ def cdmk(node, path):
             walk = createadd(elem, node)
         node = walk
 
+    # print("put return: " + str(node.name))
     return node # the node we ended up at
 
 # bfs breath-first searches for all nodes named 'name' starting from 'node' and puts them in 'out'
@@ -207,10 +219,10 @@ def bfs(node, name, out):
 # cdroot cds back to root. side effect: ghosts are exited
 def cdroot(node):
     if node == None: return None
-    if node.cd[".."] == node: # we're at the root
+    if node.cd[".."] == node: # we're at a root
         return node
     # continue via the parent
-    cdroot(cdone(node, ".."))
+    return cdroot(cdone(node, ".."))
     
 # cdone walks one step from node
 def cdone(node, step):
@@ -386,7 +398,7 @@ def main(f):
         #if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
         
         # we're at a root if the name starts with a //
-        if re.match(r"^//", name):
+        if isroot(name):
             # maybe an alias follows the file name, seperated by ': '
 
             parts = name.split(": ")
@@ -423,7 +435,7 @@ def main(f):
     if len(roots) == 0:
         exit
 
-    # print("roots: " + roots)
+    # print("roots: " + str(roots))
 
     """ now that we got the roots, we can start putting in the chunks. """
 
@@ -437,7 +449,7 @@ def main(f):
             path = getname(line) 
         elif isend(line): # at the end of chunk save chunk
             inchunk = False
-            #print(f"calling put for: {path}")
+            # print(f"calling put for: {path}")
             put(path, chunk)
             # reset variables
             chunk = ""
@@ -458,9 +470,11 @@ def main(f):
     """ at the end, write all files (each file is a root) """
     for filename in roots:
         # todo: add don't edit comment like before
+        
         # assemble the code
         out = assemble(roots[filename], "")
         # printtree(roots[filename])
+        
         # and write it to file
         # print(f"write {filename}")
         f = open(filename, "w")
