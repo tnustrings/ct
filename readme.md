@@ -10,6 +10,7 @@ here's an example:
 ```
 begin a file named foo.py and alias it as foo.
 
+<<//foo.py: foo
 print("ooh, baby you're a fool to py") 
 if bar {
   <<bar>>
