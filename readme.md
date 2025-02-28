@@ -1,26 +1,28 @@
 # codetext
 
 codetext is a way of writing computer programs where your code is
-embedded in text like graphics or images floating in a document.
+embedded in text like graphics or images floating in a document. it's
+a bit like a jupyter notebook with the addition that code chunks are
+named and you can nest them into one another by referencing the names.
 
 here's an example:
 
 ```
 begin a file named foo.py and alias it as foo.
 
-<<//foo.py: foo
-   <<import>>
-   ooh, baby you're a fool to py
-   <<bar>>
+print("ooh, baby you're a fool to py") 
+if bar {
+  <<bar>>
+}
 >>
 
-chunks that are file-roots are preceeded with a //.
+the preceeding // in //foo.py marks it as a file root.
 
 chunk names are noted as paths, e.g. /bar for the chunk named bar in
 the last opened file. we put some code into the /bar chunk.
 
 <</bar
-   my bar code
+   print("my bar")
    <<baz>>
    <<boz>>
 >>
@@ -28,7 +30,7 @@ the last opened file. we put some code into the /bar chunk.
 we can use relative paths and reference the previous chunk (/bar) via .
 
 <<./baz
-   my baz code
+   my = "baz code"
 >>
 
 this would be baz' absolute path:
@@ -46,14 +48,14 @@ and this would be it's path starting from the file:
 when we don't give a path we append to the same chunk.
 
 <<
-   still my baz code.
+   print("still my baz code.")
 >>
 
 if we would like to change to baz's sibling boz now, we could say
 ../boz, /bar/boz, //foo/bar/boz or /*/boz, if boz's name is unique in foo.
 
 <</*/boz
-   in boz
+   print("in boz")
 >>
 
 if there's a loop etc, and we would like the next unnamed chunk in the
@@ -70,13 +72,13 @@ then the following chunk will be put where the <<.>> tag is and not to
 the end of the chunk.
 
 <<
-   inside the loop
+   print("inside the loop")
 >>
 
 go back via ..
 
 <<..
-   appending to the /bar/baz code again
+   print("appending to the foo/bar/baz code again")
 >>
 
 we open a second file, named zoo.py, and alias it as 'zoo'.
