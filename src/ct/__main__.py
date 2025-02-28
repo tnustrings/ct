@@ -1,4 +1,4 @@
-# __main__ kicks off ct called from command line and python -m
+# __main__ kicks off ct from command line and python -m
 
 import sys
 from ct import tangle

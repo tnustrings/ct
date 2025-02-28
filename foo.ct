@@ -1,23 +1,23 @@
 begin a file named foo.py and alias it as foo.
 
-<</foo.py: foo
+<<//foo.py: foo
    <<import>>
    ooh, baby you're a fool to py
    <<bar>>
 >>
 
-filenames that get written out need to be preceeded with a /.
+chunks that are roots of files are preceeded with a //.
 
-chunk names are noted as paths, e.g. foo/bar for the chunk bar in
-foo. we put some code into the foo/bar chunk.
+chunk names are noted as paths, e.g. /bar for the chunk named bar in
+the last opened file. we put some code into the /bar chunk.
 
-<<foo/bar
+<</bar
    my bar code
    <<baz>>
    <<boz>>
 >>
 
-we can use relative paths and reference the previous chunk via .
+we can use relative paths and reference the previous chunk (/bar) via .
 
 <<./baz
    my baz code
@@ -25,8 +25,14 @@ we can use relative paths and reference the previous chunk via .
 
 this would be baz' absolute path:
 
-<<foo/bar/baz
-   and it makes me wonder why
+<</bar/baz
+   and it makes me 
+>>
+
+and this would be it's path starting from the file:
+
+<<//foo/bar/baz
+   wonder why
 >>
 
 when we don't give a path we append to the same chunk.
@@ -36,11 +42,11 @@ when we don't give a path we append to the same chunk.
 >>
 
 if we would like to change to baz's sibling boz now, we could say
-../boz, foo/bar/boz, or foo/*/boz, if boz's name is unique in foo.
+../boz, /bar/boz, //foo/bar/boz or /*/boz, if boz's name is unique in foo.
 
-<<foo/*/boz
+</*/boz
    in boz
->>
+>
 
 if there's a loop etc, and we would like the next unnamed chunk in the
 text to be inside the loop instead of appended to the end of the chunk
@@ -62,13 +68,26 @@ the end of the chunk.
 go back via ..
 
 <<..
-   appending to the foo/bar/baz code again
+   appending to the /bar/baz code again
 >>
 
-we open a second file, named zoo.py:
+we open a second file, named zoo.py, and alias it as 'zoo'.
 
-<</zoo.py: zoo
+<<//zoo.py: zoo
   welcome to the zoo
+  <<dolphins>>
+>>
+
+now the last opened file is zoo.py, so /dolphins takes us to the chunk in zoo.py
+
+<</dolphins
+  print("are there dolphins in the zoo?")
+>>
+
+if you'd like to switch back to foo.py, go via its name or its alias:
+
+<<//foo
+  print("hello foo again")
 >>
 
 if there's only one output file in the codetext and if you don't give

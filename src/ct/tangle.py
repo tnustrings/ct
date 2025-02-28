@@ -1,81 +1,8 @@
-# tangle.py: tangle with chunkname paths
-# usage: cat file.nw | python3 tangleb.py
-#        cat file.ct | cttonw | python3 tangleb.py
+# tangle.py: codetext tangle with chunkname paths
+# usage: tangle.main("file.ct")
 
-# chunkname paths work like nested directories: for example, if the name <<baz>> appears in the chunk <<bar>>, it's referenced as <<bar/baz>>=
-# <<.>>= references the previous codechunk, <<./foo>>= references the <<foo>> tag in the previous codechunk
+# for codetext syntax, see readme.md
 
-# if there's only one filename, assume all chunks belong to that filename.
-
-# if there are multiple filenames, they can be aliased: <<program.py: program>>= and then referred to as <<program/codechunk>>=
-
-# note that each chunkname path is assumed to be absolute unless preceeded with . or empty (on the shell it's the other way round).
-
-"""example input (codetext):
-
-to tangle this codetext example, copy it to example.ct and say `cat
-example.ct | ./cttonw | python3 tangleb.py`
-
-we open a file foo.py, and alias it as 'foo'.
-
-<<foo.py: foo
-   ooh, baby you're a fool to py
-   <<bar>>
->>
-
-when we refer to child chunks, we can use the 'foo' alias or the
-foo.py filename. if there is only one file in the whole document, and
-it doesn't have an alias, leave out its filename when referring to
-child chunks. here there is an alias (foo), so we use it to refer to
-the bar child:
-
-<<foo/bar
-   my bar code
-   <<baz>>
->>
-
-a relative path for the baz-child.
-
-<<./baz
-   my baz code
->>
-
-this would be baz' absolute path:
-
-<<foo/bar/baz
-   and it makes me wonder why
->>
-
-without path we stay in the baz chunk.
-
-<<
-   still my baz code.
->>
-
-if there's a loop etc, and we would like the next unnamed chunk in the
-text be not to get appended to the chunk end but to be inside the
-loop, we can say <<.>>:
-
-<<
-   for i = 0; i < n; i++ {
-      <<.>>
-   }
->>
-
-then the following chunk would appear at the <<.>> tag and not at the
-chunk-end.
-
-<<
-   inside the loop
->>
-
-go back via ..
-
-<<..
-   appending to the foo/bar/baz code again
->>
-
-"""
 
 # imports
 
@@ -190,10 +117,10 @@ def put(path, text):
     # its ok to remove the leading / because roots have already been
     # identified and to start a relative path would need to be made
     # explicit with .
-    path = path.strip("/") 
+    # path = path.strip("/") 
         
-    # if at file name, take only file name
-    if re.match(r".*: .*", path): 
+    # if at file path, take only the path and chop off the alias
+    if re.match(r"^//", path): 
         parts = path.split(": ")
         path = parts[0]
 
@@ -213,10 +140,25 @@ def put(path, text):
 # it returns the node it ended up at
 def cdmk(node, path):
     # if path not relative, start from a root
-    if not (re.match(r"^\.", path) or path == ""):
-        # we may switch roots here. before that, we need to exit open ghosts. cdroot does this along the way
+    #if not (re.match(r"^\.", path) or path == ""): # why path == ""?
+    #    # we may switch roots here. before that, we need to exit open ghosts. cdroot does this along the way
+    #    cdroot(node)
+    #    (node, path) = getroot(path)
+
+    # if file path // switch roots
+    if re.match(r"^//", path):
+        # we need to exit open ghost nodes. cdroot does this along the way.
         cdroot(node)
         (node, path) = getroot(path)
+    # if absolute path / go to root
+    elif re.match(r"^/", path):
+        # we need to exit open ghost nodes. cdroot does this along the way.
+        cdroot(node)
+
+    # remove leading / of absolute path
+    path = path.strip("/")
+
+    # follow the path
         
     elems = path.split("/")
     search = False # search for the next name
@@ -232,6 +174,9 @@ def cdmk(node, path):
             bfs(node, elem, res) # search elem in node's subtree
             if len(res) > 1:
                 print(f"error: more than one nodes named {elem} in sub-tree of {pwd(node)}")
+                exit
+            elif len(les) == 0:
+                print(f"error: no nodes named {elem} in sub-tree of {pwd(node)}")
                 exit
             else:
                 node = res[0]
@@ -370,33 +315,45 @@ def lastnamed(node):
     if node.name != GHOST: return node
     return lastnamed(node.cd[".."])
 
-filenames = {} # from alias to filenames
+fileforalias = {} # from alias to filenames
 roots = {}
 
 # getroot returns root referenced by path and chops off root in path, except if there's only one un-aliased root.
 def getroot(path):
+    # remove the leading // of root path
+    path = path.strip("/")
+    
+    # split the path
     p = path.split("/")
+
+    # allow splitting file paths and subsequent chunk paths by //?
+    # p = path.split("//")
+    # return (resolveroot(p[0]), p[1])
+    """
     # if only one root, it can be made implicit in the path names
     if len(roots) == 1:
         # return this one root along with the whole path
         only = roots[list(roots.keys())[0]]
         # when we're at the root chunk itsself, we want it out of the path in any case
-        if len(p) == 1 and (p[0] in roots or p[0] in filenames):
+        if len(p) == 1 and (p[0] in roots or p[0] in fileforalias):
             return (only, "")
-        elif p[0] in filenames: # the first element is aliasing the one root, keep it
+        elif p[0] in fileforalias: # the first element is aliasing the one root, keep it
             return (only, "/".join(p[1:]))
         else:
             return (only, path)
     else: # the only root is omitted in path
         # return the root as referenced by the first path-part, and the rest of the path
         return (resolveroot(p[0]), "/".join(p[1:]))
+    """
+    # return the root as referenced by the first path-part, and the rest of the path
+    return (resolveroot(p[0]), "/".join(p[1:]))
 
 # resolveroot returns the rootnode for a filename or a alias
 def resolveroot(name):
     if name in roots: # name is a filename
         return roots[name]
-    elif name in filenames: # name is an alias
-        return roots[filenames[name]]
+    elif name in fileforalias: # name is an alias
+        return roots[fileforalias[name]]
     print(f"error: root name '{name}' not found")
     exit
 
@@ -412,7 +369,7 @@ def printtree(node):
 
 ## main runs codetext for text
 def main(f):
-    global filenames
+    global fileforalias
     
     lines = f.readlines() # readlines keeps the \n for each line, text concat in nodes relies on that
 
@@ -428,32 +385,45 @@ def main(f):
 
         #if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
         
-        # we're at a root if the name starts with a / and doesn't contain another /
-        if re.match(r"^/[^/]", name):
+        # we're at a root if the name starts with a //
+        if re.match(r"^//", name):
             # maybe an alias follows the file name, seperated by ': '
 
             parts = name.split(": ")
 
-            # remove leading slash of root name
-            filename = re.sub("^/+", "", parts[0])
+            # remove leading slashes of root name
+            filename = re.sub("^//", "", parts[0])
+            # take the first part of path as filename/alias. todo: split at //?
+            filename = filename.split("/")[0]
             
-            #filename = parts[0]
+            # the root is already created? continue.
+            
+            # todo: if a root is created at its first reference, who
+            # says that the first reference to a root contains its
+            # alias?  should we assume this?  or should we first sift
+            # through all root references and create the root if we
+            # encounter it with its alias?
+            if filename in roots:
+                continue
+            # is it an alias? continue. (this assumes aliases need to appear first in the text before they can be referenced.
+            if filename in fileforalias:
+                continue
             # create root for this file
             roots[filename] = Node(filename, None)
             if len(parts) > 1:
                 alias = parts[1]
                 # alias already used for other file
-                if alias in filenames and filenames[alias] != filename:
-                    print(f"error: alias {alias} already references file {filenames[alias]}")
+                if alias in fileforalias and fileforalias[alias] != filename:
+                    print(f"error: alias {alias} already references file {fileforalias[alias]}")
                     exit
                 # alias it
-                filenames[alias] = filename
+                fileforalias[alias] = filename
 
     """ no files, exit """
     if len(roots) == 0:
         exit
 
-    # print(roots)
+    # print("roots: " + roots)
 
     """ now that we got the roots, we can start putting in the chunks. """
 
@@ -464,7 +434,7 @@ def main(f):
         if isdeclaration(line): # at the beginning of chunk remember its name
             inchunk = True
             # print("#getname 4")
-            path = getname(line)
+            path = getname(line) 
         elif isend(line): # at the end of chunk save chunk
             inchunk = False
             #print(f"calling put for: {path}")
