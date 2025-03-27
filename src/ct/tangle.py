@@ -19,10 +19,10 @@ class Node:
             self.cd[".."] = self
         else:
             self.cd[".."] = parent
-        #self.parent = parent
-        # self.text = ""
+
         # keep the text as lines, cause splitting on '\n' on empty text gives length 1 (length 0 is wanted)
         self.lines = []
+        # the ghost children. why more than one?
         self.ghostchilds = []
         # for each text line, ctlinenr holds its original line nr in ct file
         self.ctlinenr = {}
@@ -93,9 +93,6 @@ def assemble(node, leadingspace, rootname, genlinenr):
     if node.name == GHOST:
         lnp = lastnamed(node)
         
-    # out = ""
-    # lines = node.text.split("\n")
-    
     """ 
     find out a first line how much this chunk is alredy indented
     and determine how much needs to be filled up
@@ -350,7 +347,7 @@ def concatcreatechilds(node, text, ctlinenr):
     text = re.sub(r"\n$", "", text)
     newlines = text.split("\n")
 
-    # map from line number in node to original line number in ct, before new lines are added to node
+    # map from the line number in node to original line number in ct (get existing line count before new lines are added to node)
     N = len(node.lines)
     for i, _ in enumerate(newlines):
         # go through the new lines
@@ -358,9 +355,8 @@ def concatcreatechilds(node, text, ctlinenr):
     debug("N: " + str(N))
     debug("node.ctlinenr: " + str(node.ctlinenr))
 
-    # put the new lines in node
+    # put the new lines into node
     node.lines.extend(newlines)
-    #node.text += text
 
     # generate the child nodes
     for line in newlines:
