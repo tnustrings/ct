@@ -90,6 +90,7 @@ def assemble(node, leadingspace, rootname, genlinenr):
 
     global ctlinenr
 
+    # if it's a ghost node, remember the last named parent up the tree
     if node.name == GHOST:
         lnp = lastnamed(node)
         
@@ -123,9 +124,9 @@ def assemble(node, leadingspace, rootname, genlinenr):
                 (outnew, genlinenr) = assemble(node.ghostchilds[ighost], childleadingspace, rootname, genlinenr) 
                 out += outnew #  + "\n" # why add \n?
                 ighost += 1
-            else:             # assemble a name child
+            else:             # assemble a named child
                 if node.name == GHOST:
-                    # if at ghost node, we get to the child via the last named parent
+                    # if we're at a ghost node, we get to the child via the last named ancestor
                     child = lnp.cd[name]
                 else:
                     child = node.cd[name]
@@ -326,10 +327,10 @@ def createadd(name, parent):
         """ if the parent is a ghost node, this node could have already been created before with its non-ghost path (an earlier chunk in the codetext might have declared it and put text into it, with children/ghost children, etc), then we move it as a named child from the last named parent to here """
         # if a node with this name is already child of last named parent, move it here
         if parent.name == GHOST:
-            namedp = lastnamed(node)
-            if node.name in namedp.ls():
-                node = namedp.cd[name]
-                del namedp.cd[name]
+            lnp = lastnamed(node)
+            if node.name in lnp.ls():
+                node = lnp.cd[name]
+                del lnp.cd[name]
                 node.cd[".."] = parent
 
         # add named node to parent, if it was created or moved
