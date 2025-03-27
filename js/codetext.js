@@ -12,6 +12,24 @@ main()
 function main() {
     var file = process.argv[2]
     var text = fs.readFileSync(file) + ""
+
+    // normal compiling
+    if (process.argv.length == 3) {
+	assembletext(text)
+    } else if (process.argv.length == 5) {
+	// map from line number in generated source to original line number in ct
+	// name of generated file
+	var genfile = process.argv[3]
+	// line number of generated file
+	var genlinenr = parseInt(process.argv[4])
+	assembletext(text)
+	// print the original line number in ct file
+	console.log(ctlinenr[genfile][genlinenr])
+    }
+}
+
+// assembletext assembles codetext
+function assembletext(lines) {
     var lines = text.split("\n")
 
     for (line of lines) {
@@ -67,16 +85,22 @@ function main() {
     var inchunk = false // are we in a chunk
     var chunk = "" // current chunk content
     var path = null // current chunk name/path
+    var chunkstart = 0 // start line of chunk in ct file
 
-    for (line of lines) {
+    // for (line of lines) {
+    for (var i = 0; i < lines.length; i++) {
+	var line = lines[i]
         if (isdeclaration(line)) { // at the beginning of chunk remember its name
             inchunk = true
             // print("#getname 4")
             path = getname(line)
+	    // remember the start line of chunk in ct file
+            // add two: one, for line numbers start with one not zero, another, for the chunk text starts in the next line, not this
+	    chunkstart = i+2
 	} else if (isend(line)) {
 	    inchunk = false
             // print(f"calling put for: {path}")
-            put(path, chunk)
+            put(path, chunk, chunkstart)
             // reset variables
             chunk = ""
             path = null
@@ -100,7 +124,7 @@ function main() {
         // todo: add don't edit comment like before
         
         // assemble the code
-        out = assemble(roots[filename], "")
+        [out, _] = assemble(roots[filename], "", filename, 1)
         // printtree(roots[filename])
 
 	// and write it to file
@@ -171,8 +195,13 @@ class node {
             this.cd[".."] = parent
 	}
         //self.parent = parent
-        this.text = ""
+        //this.text = ""
+	// keep the text as lines, cause splitting on '\n' on empty text gives length 1 (length 0 is wanted)
+	this.lines = []
+	// the ghost children. why more than one?
         this.ghostchilds = []
+	// for each text line, ctlinenr holds its original line nr in ct file
+	this.ctlinenr = {}
     }
         
     // ls lists the named childs
@@ -191,7 +220,7 @@ var openghost = null // if the last chunk opened a ghostnode, its this one
 
     
 // put puts text in tree under relative or absolute path
-function put(path, text) {
+function put(path, text, ctlinenr) {
     // if at file path, take only the path and chop off the alias
     if (path.match(/^\/\//)) {
         parts = path.split(": ")
@@ -213,7 +242,7 @@ function put(path, text) {
     }
 
     // append the text to node
-    concatcreatechilds(currentnode, text)
+    concatcreatechilds(currentnode, text, ctlinenr)
 }
 
 
@@ -286,24 +315,37 @@ function concatcreatechilds(node, text) {
 
     openghost = null // why here? not so clear. but we need to reset it somewhere, that only the direct next code chunk can fill a ghost node
 
-    node.text += text
-    for (var line of text.split("\n")) {
-	if (!isname(line)) { continue }
+    // replace the last \n so that spli doesn't produce an empty line at the end
+    text = text.replace(/\n$/, "")
+    var newlines = text.split("\n")
+
+    // map from the line number in node to original line number in ct (get existing line count before new lines are added to node)
+    var N = node.lines.length
+    for (var i = 0; i < newlines.length; i++) {
+	node.ctlinenr[N+i] = ctlinenr + i
     }
-    // why do we create the children when concating text? maybe because here we know where childs of ghost nodes end up in the tree. """
-    // print("#getname 2")
-    name = getname(line)
-    if (name == ".") {// ghost child
-        // if we're not at the first ghost chunk here
-        if (openghost != null) {
-            console.log("error: only one ghost child per text chunk allowed")
-            process.exit()
-	}
-        // create the ghost chunk
-        openghost = createadd(GHOST, node)
-    } else {  // we're at a name
-        if (!name in node.ls()) {
-            createadd(name, node)
+
+    //node.text += text
+    node.lines.push(...newlines)
+    
+    for (var line of newlines) {
+	if (!isname(line)) { continue }
+
+	// why do we create the children when concating text? maybe because here we know where childs of ghost nodes end up in the tree. """
+	// print("#getname 2")
+	name = getname(line)
+	if (name == ".") {// ghost child
+            // if we're not at the first ghost chunk here
+            if (openghost != null) {
+		console.log("error: only one ghost child per text chunk allowed")
+		process.exit()
+	    }
+            // create the ghost chunk
+            openghost = createadd(GHOST, node)
+	} else {  // we're at a name
+            if (!name in node.ls()) {
+		createadd(name, node)
+	    }
 	}
     }
 }
@@ -419,34 +461,50 @@ function exitghost(ghost) {
     }
 }
 
+// for each generated file, map its line numbers to the original line numbers in ct file
+var ctlinenr = {}
 
-var GHOST = "#" // name of ghost nodes
+// the name of ghost nodes
+var GHOST = "#" 
 
 /* assemble assembles a codechunk recursively, filling up its leading
 space to leadingspace. this way we can take chunks that are already
 (or partly) indented with respect to their parent in the editor, and
 chunks that are not.  */
 
-function assemble(node, leadingspace) {
+function assemble(node, leadingspace, rootname, genlinenr) {
+
+    // if it's a ghost node, remember the last named parent up the tree
     if (node.name == GHOST) {
         var lnp = lastnamed(node)
     }
 
-    var out = ""
-    var lines = node.text.split("\n")
+    //var out = ""
+    //var lines = node.text.split("\n")
 
     /* 
     find out a first line how much this chunk is alredy indented
     and determine how much needs to be filled up
     */
     // leading space already there
-    alreadyspace = lines[0].match(/^\s*/)[0]
+    if (node.lines.length > 0) {
+	alreadyspace = node.lines[0].match(/^\s*/)[0]
+    } else {
+	alreadyspace = "" // no line, so no leading space already there
+    }
     // space that needs to be added
     addspace = leadingspace.replace(alreadyspace, "") // replace only the first of alreadyspace
 
+    // if the rootname isn't in ctlinenr yet, put it there
+    if (!rootname in ctlinenr) {
+        ctlinenr[rootname] = {}
+    }
+
     var out = ""
     var ighost = 0 
-    for (var line of lines) {
+    // for (var line of lines) {
+    for (var i = 0; i < node.lines.length; i++) {
+	var line = node.lines[i]
         if (isname(line)) {
 
             // remember leading whitespace
@@ -454,7 +512,9 @@ function assemble(node, leadingspace) {
             // print("#getname 1")
 	    name = getname(line)
             if (name == ".") {  // assemble a ghost-child
-		out += assemble(node.ghostchilds[ighost], childleadingspace) + "\n"
+		[outnew, genlinenr] = assemble(node.ghostchilds[ighost], childleadingspace, rootname, genlinenr)
+		// append the text
+		outnew += out
                 ighost += 1
 	    } else {            // assemble a name child
                 if (node.name == GHOST) {
@@ -463,15 +523,20 @@ function assemble(node, leadingspace) {
 		} else {
 		    child = node.cd[name]
 		}
-                out += assemble(child, childleadingspace) + "\n"
+                [outnew, genlinenr] = assemble(child, childleadingspace, rootname, genlinenr)
+		out += outnew
 	    }
 	}
 	else {  // not name line, normal line
             out += addspace + line + "\n"
+	    // map from the line number in the generated source to the original line number in the ct
+	    ctlinenr[rootname][genlinenr] = node.ctlinenr[i]
+	    // we added one line to root, so count up
+	    genlinenr += 1
 	}
     }
     
-    return out
+    return [out, genlinenr]
 }
 
 
