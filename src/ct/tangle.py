@@ -20,67 +20,102 @@ class Node:
         else:
             self.cd[".."] = parent
         #self.parent = parent
-        self.text = ""
+        # self.text = ""
+        # keep the text as lines, cause splitting on '\n' on empty text gives length 1 (length 0 is wanted)
+        self.lines = []
         self.ghostchilds = []
+        # for each text line, ctlinenr holds its original line nr in ct file
+        self.ctlinenr = {}
         
     # ls lists the named childs
     def ls(self):
         # return all except . and ..
         return [k for k in self.cd.keys() if k != "." and k != ".."]
+
+# debug offers a turn-offable print
+def debug(s):
+    i = 0
+    # print(s)
     
 # isdeclaration returns true if line is the declaration line of a code chunk
 def isdeclaration(line):
     # return re.match(r".*<<.*>>=", line)
-    return re.match(r"^<<[^\>]*$", line)
+    starttick = bool(re.search(r"^``[^\`]*$", line))
+    wordchar = bool(re.search(r"^``.*\w+.*$", line))
+    ret = starttick and wordchar
+    debug(f"isdeclaration {line}: {ret}")
+    return starttick and wordchar
 
 # isname returns true if line is the referencing name line of a code chunk
 def isname(line):
-    return re.match(r".*<<.*>>", line)
+    ret = bool(re.match(r".*``.*``", line))
+    debug(f"isname {line}: {ret}")
+    return ret
 
 # isend says if the line is the end of a code chunk
 def isend(line):
     # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
-    return re.match(r"^>>$", line)
+    ret = bool(re.match(r"^``$", line))
+    debug(f"isend {line}: {ret}")
+    return ret
 
 # isroot says whether the name is a root
 def isroot(name):
-    return re.match(r"^//", name)
+    ret = re.match(r"^//", name)
+    debug(f"isroot {name}: {ret}")
+    return ret
 
 # getname gets the chunkname from a declaration or in-chunk line
 def getname(line):
-    name = re.sub(r".*<<", "", line)
-    name = re.sub(r">>.*", "", name) # chunk declarations do not have this
+    name = re.sub(r"^[^`]*``", "", line, 1) # 1: count
+    name = re.sub(r"``.*", "", name) # chunk declarations do not have this
     name = re.sub("\n$", "", name)
-    # print(f"getname({line}): '{name}'")
+    
+    debug(f"getname({line}): '{name}'")
 
     return name
 
-GHOST = "#" # name of ghost nodes
+# for each generated file, map its line numbers to the original line
+# numbers in ct file
+ctlinenr = {}
+
+# the name of ghost nodes
+GHOST = "#" 
 
 # assemble assembles a codechunk recursively, filling up its leading
 # space to leadingspace. this way we can take chunks that are already
 # (or partly) indented with respect to their parent in the editor, and
 # chunks that are not. 
-def assemble(node, leadingspace):
+def assemble(node, leadingspace, rootname, genlinenr):
+
+    global ctlinenr
 
     if node.name == GHOST:
         lnp = lastnamed(node)
         
-    out = ""
-    lines = node.text.split("\n")
+    # out = ""
+    # lines = node.text.split("\n")
     
     """ 
     find out a first line how much this chunk is alredy indented
     and determine how much needs to be filled up
     """
-    # leading space already there
-    alreadyspace = re.search(r"^\s*", lines[0]).group()
+    # leading space already there (in first line)
+    if len(node.lines) > 0:
+        alreadyspace = re.search(r"^\s*", node.lines[0]).group()
+    else:
+        alreadyspace = "" # no line, so no leading space already there
     # space that needs to be added
     addspace = leadingspace.replace(alreadyspace, "", 1) # 1: replace once
 
+    # if the rootname isn't in ctlinenr yet, put it there
+    if not rootname in ctlinenr:
+        ctlinenr[rootname] = {}
+
     out = ""
     ighost = 0 
-    for line in lines:
+    # for line in lines:
+    for i, line in enumerate(node.lines):
         if isname(line):
 
             # remember leading whitespace
@@ -88,7 +123,8 @@ def assemble(node, leadingspace):
             # print("#getname 1")
             name = getname(line)
             if name == ".":   # assemble a ghost-child
-                out += assemble(node.ghostchilds[ighost], childleadingspace) + "\n"
+                (outnew, genlinenr) = assemble(node.ghostchilds[ighost], childleadingspace, rootname, genlinenr) 
+                out += outnew #  + "\n" # why add \n?
                 ighost += 1
             else:             # assemble a name child
                 if node.name == GHOST:
@@ -96,17 +132,22 @@ def assemble(node, leadingspace):
                     child = lnp.cd[name]
                 else:
                     child = node.cd[name]
-                out += assemble(child, childleadingspace) + "\n"
+                (outnew, genlinenr) = assemble(child, childleadingspace, rootname, genlinenr) 
+                out += outnew # + "\n" # why add \n?
         else: # normal line
             out += addspace + line + "\n"
+            # map from the line number in the generated source to the original line number in the ct
+            ctlinenr[rootname][genlinenr] = node.ctlinenr[i]
+            genlinenr += 1 # we added one line to root, so count up
 
-    return out
+    # return the generated text and the new root line number (should be the same as the number of lines in out, so maybe don't return it?)
+    return (out, genlinenr)
 
 currentnode = None # the node we're currently at
 openghost = None # if the last chunk opened a ghostnode, its this one
 
 # put puts text in tree under relative or absolute path
-def put(path, text):
+def put(path, text, ctlinenr):
     global openghost
     global currentnode
 
@@ -126,6 +167,7 @@ def put(path, text):
     # path = path.strip("/") 
         
     # if at file path, take only the path and chop off the alias
+    debug(f"path: {path}")
     if re.match(r"^//", path): 
         parts = path.split(": ")
         path = parts[0]
@@ -143,7 +185,7 @@ def put(path, text):
         currentnode = cdmk(currentnode, path)
 
     # append the text to node
-    concatcreatechilds(currentnode, text)
+    concatcreatechilds(currentnode, text, ctlinenr)
 
 
 # cdmk walks the path from node and creates nodes if needed along the way.
@@ -232,7 +274,7 @@ def cdone(node, step):
     if step == "":
         step = "."
     if step == "..": # up the tree
-        # print(f"call exitghost for {pwd(node)}")
+        # debug(f"call exitghost for {pwd(node)}")
         exitghost(node)
 
     if step in node.cd:
@@ -245,7 +287,7 @@ def exitghost(ghost):
     # not a ghost? do nothing
     if ghost == None or ghost.name != GHOST:
         return
-    #print("exitghost")
+    #debug("exitghost")
 
     """ if we exit a ghost node, we move all its named childs to the ghost node's parent and let the ghostnode be the childs' ghostparent (from where they can get e.g. their indent) """
     # for name, child in node.namedchilds.items():
@@ -274,11 +316,11 @@ def pwd(node):
 def createadd(name, parent):
 
     node = Node(name, parent)
-    # print(f"createadd: {pwd(node)}")
+    # debug(f"createadd: {pwd(node)}")
     
     # if we're creating a ghost node
     if node.name == GHOST:
-        # print(f"creating a ghost child for {parent.name}")
+        # debug(f"creating a ghost child for {parent.name}")
         # add it to its parent's ghost nodes
         parent.ghostchilds.append(node)
     else:
@@ -300,15 +342,32 @@ def createadd(name, parent):
 
 # concatcreatechilds concatenates text to node and creates children from text (named or ghost)
 # this is the only place where text gets added to nodes
-def concatcreatechilds(node, text):
+def concatcreatechilds(node, text, ctlinenr):
     global openghost
     openghost = None # why here? not so clear. but we need to reset it somewhere, that only the direct next code chunk can fill a ghost node
-    node.text += text
-    for line in text.split("\n"):
+
+    # replace the last \n so that spli doesn't produce an empty line at the end
+    text = re.sub(r"\n$", "", text)
+    newlines = text.split("\n")
+
+    # map from line number in node to original line number in ct, before new lines are added to node
+    N = len(node.lines)
+    for i, _ in enumerate(newlines):
+        # go through the new lines
+        node.ctlinenr[N+i] = ctlinenr + i
+    debug("N: " + str(N))
+    debug("node.ctlinenr: " + str(node.ctlinenr))
+
+    # put the new lines in node
+    node.lines.extend(newlines)
+    #node.text += text
+
+    # generate the child nodes
+    for line in newlines:
         if not isname(line):
             continue
         """ why do we create the children when concating text? maybe because here we know where childs of ghost nodes end up in the tree. """
-        # print("#getname 2")
+        # debug("#getname 2")
         name = getname(line)
         if name == ".": # ghost child
             # if we're not at the first ghost chunk here
@@ -392,7 +451,7 @@ def main(f):
         # only look at declaration lines
         if not isdeclaration(line):
             continue
-        # print("#getname 3")
+        # debug("#getname 3")
         name = getname(line)
 
         #if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
@@ -435,22 +494,35 @@ def main(f):
     if len(roots) == 0:
         exit
 
-    # print("roots: " + str(roots))
+    # debug("roots: " + str(roots))
 
     """ now that we got the roots, we can start putting in the chunks. """
 
-    inchunk = False # are we in a chunk
-    chunk = "" # current chunk content
-    path = None # current chunk name/path
-    for line in lines:
-        if isdeclaration(line): # at the beginning of chunk remember its name
+    # are we in a chunk
+    inchunk = False
+    # current chunk content
+    chunk = ""
+    # current chunk name/path
+    path = None
+    # start line of chunk in ct file
+    chunkstart = 0
+    
+    # for line in lines:
+    for i, line in enumerate(lines):
+        #if isdeclaration(line): # at the beginning of chunk remember its name
+        """we can't decide for sure whether we're opening or closing a chunk by looking at the backticks alone, cause an unnamed chunk is opend the same way it is closed.  so in addition, check that inchunk is false."""
+        if bool(re.search(r"^``[^`]*", line)) and inchunk is False: # at the beginning of chunk remember its name
             inchunk = True
-            # print("#getname 4")
-            path = getname(line) 
+            # debug("#getname 4")
+            path = getname(line)
+            # remember the start line of chunk in ct file
+            # add two: one, for line numbers start with one not zero, another, for the chunk text starts in the next line, not this
+            chunkstart = i+2
         elif isend(line): # at the end of chunk save chunk
             inchunk = False
-            # print(f"calling put for: {path}")
-            put(path, chunk)
+            # debug(f"calling put for: {path}")
+            # debug("split chunk: " + str(chunk.split("\n")))
+            put(path, chunk, chunkstart)
             # reset variables
             chunk = ""
             path = None
@@ -458,7 +530,7 @@ def main(f):
         elif inchunk: # when we're in chunk remember line
             chunk += line
         #else:
-        #    print(line, end="") # for debugging
+        #    debug(line, end="") # for debugging
 
 
     """ in the end we need to exit all un-exited ghost nodes so that their
@@ -472,7 +544,7 @@ def main(f):
         # todo: add don't edit comment like before
         
         # assemble the code
-        out = assemble(roots[filename], "")
+        (out, _) = assemble(roots[filename], "", filename, 1)
         # printtree(roots[filename])
         
         # and write it to file

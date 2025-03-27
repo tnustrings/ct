@@ -10,96 +10,96 @@ here's an example:
 ```
 begin a file named foo.py and alias it as foo.
 
-<<//foo.py: foo
+``//foo.py: foo
 print("ooh, baby you're a fool to py") 
 if bar {
-  <<bar>>
+  ``bar``
 }
->>
+``
 
 the preceeding // in //foo.py marks it as a file root.
 
 chunk names are noted as paths, e.g. /bar for the chunk named bar in
 the last opened file. we put some code into the /bar chunk.
 
-<</bar
+``/bar
    print("my bar")
-   <<baz>>
-   <<boz>>
->>
+   ``baz``
+   ``boz``
+``
 
 we can use relative paths and reference the previous chunk (/bar) via .
 
-<<./baz
+``./baz
    my = "baz code"
->>
+``
 
 this would be baz' absolute path:
 
-<</bar/baz
+``/bar/baz
    and it makes me 
->>
+``
 
 and this would be it's path starting from the file:
 
-<<//foo/bar/baz
+``//foo/bar/baz
    wonder why
->>
+``
 
 when we don't give a path we append to the same chunk.
 
-<<
+``
    print("still my baz code.")
->>
+``
 
 if we would like to change to baz's sibling boz now, we could say
 ../boz, /bar/boz, //foo/bar/boz or /*/boz, if boz's name is unique in foo.
 
-<</*/boz
+``/*/boz
    print("in boz")
->>
+``
 
 if there's a loop etc, and we would like the next unnamed chunk in the
 text to be inside the loop instead of appended to the end of the chunk
-we can say <<.>>:
+we can say ``.``:
 
-<<
+``
    for i = 0; i < n; i++ {
-      <<.>>
+      ``.``
    }
->>
+``
 
-then the following chunk will be put where the <<.>> tag is and not to
+then the following chunk will be put where the ``.`` tag is and not to
 the end of the chunk.
 
-<<
+``
    print("inside the loop")
->>
+``
 
 go back via ..
 
-<<..
+``
    print("appending to the foo/bar/baz code again")
->>
+``
 
 we open a second file, named zoo.py, and alias it as 'zoo'.
 
-<<//zoo.py: zoo
+``//zoo.py: zoo
   welcome to the zoo
-  <<dolphins>>
->>
+  ``dolphins``
+``
 
 now the last opened file is zoo.py, so /dolphins takes us to the chunk in zoo.py
 
-<</dolphins
+``/dolphins
   print("are there dolphins in the zoo?")
->>
+``
 
 if you'd like to switch back to foo.py, go via its name or its alias:
 
-<<//foo
+``//foo
   print("hello foo again")
->>
+``
 
 if there's only one output file in the codetext and if you don't give
 this file an alias, you leave out its name when referring to child
