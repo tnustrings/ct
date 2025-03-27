@@ -52,8 +52,9 @@ def isname(line):
     debug(f"isname {line}: {ret}")
     return ret
 
-# isend says if the line is the end of a code chunk
-def isend(line):
+# isdblticks says if the line consists of two ticks only
+# this could either be a start line of an unnamed chunk or an end line of a chunk
+def isdblticks(line):
     # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
     ret = bool(re.match(r"^``$", line))
     debug(f"isend {line}: {ret}")
@@ -374,7 +375,9 @@ def concatcreatechilds(node, text, ctlinenr):
             # create the ghost chunk
             openghost = createadd(GHOST, node)
         else: # we're at a name
+            # if name not yet in child nodes
             if not name in node.ls():
+                # create a new child node and add it
                 createadd(name, node)
 
 # lastnamed returns the last named parent node
@@ -515,7 +518,7 @@ def main(f):
             # remember the start line of chunk in ct file
             # add two: one, for line numbers start with one not zero, another, for the chunk text starts in the next line, not this
             chunkstart = i+2
-        elif isend(line): # at the end of chunk save chunk
+        elif isdblticks(line): # at the end of chunk save chunk
             inchunk = False
             # debug(f"calling put for: {path}")
             # debug("split chunk: " + str(chunk.split("\n")))

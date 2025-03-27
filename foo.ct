@@ -6,6 +6,12 @@ begin a file named foo.py and alias it as foo.
    ``bar``
 ``
 
+a little import todo delete
+
+``/import
+   hello import
+``
+
 chunks that are roots of files are preceeded with a //.
 
 chunk names are noted as paths, e.g. /bar for the chunk named bar in
