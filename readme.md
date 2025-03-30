@@ -1,23 +1,23 @@
 # codetext
 
-codetext is a way of writing computer programs where your code is
+codetext lets you write computer programs where the code is
 embedded in text like graphics or images floating in a document. it's
 a bit like a jupyter notebook with the addition that code chunks are
-named and you can nest them into one another by referencing the names.
+named and you can use the names to nest chunks.
 
 here's an example:
 
 ```
-begin a file named foo.py and alias it as foo.
+begin a file named foo.py.
 
-``//foo.py: foo
+``//foo.py
 print("ooh, baby you're a fool to py") 
 if bar {
   ``bar``
 }
 ``
 
-the preceeding // in //foo.py marks it as a file root.
+the preceeding // in //foo.py marks this code chunk as a file root.
 
 chunk names are noted as paths, e.g. /bar for the chunk named bar in
 the last opened file. we put some code into the /bar chunk.
@@ -42,7 +42,7 @@ this would be baz' absolute path:
 
 and this would be it's path starting from the file:
 
-``//foo/bar/baz
+``//foo.py/bar/baz
    wonder why
 ``
 
@@ -53,7 +53,8 @@ when we don't give a path we append to the same chunk.
 ``
 
 if we would like to change to baz's sibling boz now, we could say
-../boz, /bar/boz, //foo/bar/boz or /*/boz, if boz's name is unique in foo.
+../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
+in foo.
 
 ``/*/boz
    print("in boz")
@@ -82,9 +83,9 @@ go back via ..
    print("appending to the foo/bar/baz code again")
 ``
 
-we open a second file, named zoo.py, and alias it as 'zoo'.
+we open a second file, named zoo.py.
 
-``//zoo.py: zoo
+``//zoo.py
   welcome to the zoo
   ``dolphins``
 ``
@@ -95,9 +96,9 @@ now the last opened file is zoo.py, so /dolphins takes us to the chunk in zoo.py
   print("are there dolphins in the zoo?")
 ``
 
-if you'd like to switch back to foo.py, go via its name or its alias:
+if you'd like to switch back to foo.py like this:
 
-``//foo
+``//foo.py
   print("hello foo again")
 ``
 
@@ -107,8 +108,8 @@ chunks, otherwise you include it like above.
 
 ```
 
-`foo.ct` contains the above example. you can extract `foo.py` and `zoo.py`
-by saying `ct foo.ct`.
+`foo.ct` contains the above example. you can assemble `foo.py` and
+`zoo.py` by saying `ct foo.ct`.
 
 ## build
 

@@ -8,10 +8,12 @@
 
 import re
 import sys
+from typing import Self # to reference Node type in Node
+import array
 
 """ code-chunks are represented as nodes in a tree. """
 class Node: 
-    def __init__(self, name, parent):
+    def __init__(self, name: str, parent: Self):
         self.name = name
         self.cd = {}
         self.cd["."] = self
@@ -33,12 +35,12 @@ class Node:
         return [k for k in self.cd.keys() if k != "." and k != ".."]
 
 # debug offers a turn-offable print
-def debug(s):
+def debug(s: str):
     i = 0
     # print(s)
     
 # isdeclaration returns true if line is the declaration line of a code chunk
-def isdeclaration(line):
+def isdeclaration(line: str) -> bool:
     # return re.match(r".*<<.*>>=", line)
     starttick = bool(re.search(r"^``[^\`]*$", line))
     wordchar = bool(re.search(r"^``.*\w+.*$", line))
@@ -47,30 +49,35 @@ def isdeclaration(line):
     return starttick and wordchar
 
 # isname returns true if line is the referencing name line of a code chunk
-def isname(line):
+def isname(line: str) -> bool:
     ret = bool(re.match(r".*``.*``", line))
     debug(f"isname {line}: {ret}")
     return ret
 
 # isdblticks says if the line consists of two ticks only
 # this could either be a start line of an unnamed chunk or an end line of a chunk
-def isdblticks(line):
+def isdblticks(line: str) -> bool:
     # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
     ret = bool(re.match(r"^``$", line))
     debug(f"isend {line}: {ret}")
     return ret
 
 # isroot says whether the name is a root
-def isroot(name):
-    ret = re.match(r"^//", name)
+def isroot(name: str) -> bool:
+    ret = bool(re.match(r"^//", name))
     debug(f"isroot {name}: {ret}")
     return ret
 
-# getname gets the chunkname from a declaration or in-chunk line
-def getname(line):
+# getname gets the chunkname from a declaration or in-chunk reference
+def getname(line: str) -> str:
+    # remove the leading ticks (declarations and references)
     name = re.sub(r"^[^`]*``", "", line, 1) # 1: count
-    name = re.sub(r"``.*", "", name) # chunk declarations do not have this
-    name = re.sub("\n$", "", name)
+    # remove the trailing ticks (references only)
+    name = re.sub(r"``.*", "", name)
+    # remove the newline (declarations only)
+    name = re.sub(r"\n$", "", name)
+    # remove the programming language hashtag (if there) (declarations only)
+    name = re.sub(r"#\w+$", "", name)
     
     debug(f"getname({line}): '{name}'")
 
@@ -87,7 +94,7 @@ GHOST = "#"
 # space to leadingspace. this way we can take chunks that are already
 # (or partly) indented with respect to their parent in the editor, and
 # chunks that are not. 
-def assemble(node, leadingspace, rootname, genlinenr):
+def assemble(node: Node, leadingspace: str, rootname: str, genlinenr: int) -> (str, int):
 
     global ctlinenr
 
@@ -146,11 +153,11 @@ currentnode = None # the node we're currently at
 openghost = None # if the last chunk opened a ghostnode, its this one
 
 # put puts text in tree under relative or absolute path
-def put(path, text, ctlinenr):
+def put(path: str, text: str, ctlinenr: int) -> None:
     global openghost
     global currentnode
 
-    # print("put(" + path + ")")
+    debug("put(" + path + ")")
     
     #if currentnode != None:
     #    print(f"current node in put: {pwd(currentnode)}")
@@ -164,13 +171,13 @@ def put(path, text, ctlinenr):
     # identified and to start a relative path would need to be made
     # explicit with .
     # path = path.strip("/") 
-        
+
     # if at file path, take only the path and chop off the alias
     debug(f"path: {path}")
     if re.match(r"^//", path): 
         parts = path.split(": ")
         path = parts[0]
-
+    
     # create a ghostnode if called for
     if path == "." or path == "" and openghost != None:
         currentnode = openghost
@@ -189,7 +196,7 @@ def put(path, text, ctlinenr):
 
 # cdmk walks the path from node and creates nodes if needed along the way.
 # it returns the node it ended up at
-def cdmk(node, path):
+def cdmk(node: Node, path: str) -> Node:
     # if path not relative, start from a root
     #if not (re.match(r"^\.", path) or path == ""): # why path == ""?
     #    # we may switch roots here. before that, we need to exit open ghosts. cdroot does this along the way
@@ -227,7 +234,7 @@ def cdmk(node, path):
             if len(res) > 1:
                 print(f"error: more than one nodes named {elem} in sub-tree of {pwd(node)}")
                 exit
-            elif len(les) == 0:
+            elif len(res) == 0:
                 print(f"error: no nodes named {elem} in sub-tree of {pwd(node)}")
                 exit
             else:
@@ -246,7 +253,7 @@ def cdmk(node, path):
     return node # the node we ended up at
 
 # bfs breath-first searches for all nodes named 'name' starting from 'node' and puts them in 'out'
-def bfs(node, name, out):
+def bfs(node: Node, name: str, out: array.array) -> None:
     #    print(f"bfs {node}")
     if node.name == name:
         out.append(node)
@@ -258,7 +265,7 @@ def bfs(node, name, out):
         bfs(child, name, out)
 
 # cdroot cds back to root. side effect: ghosts are exited
-def cdroot(node):
+def cdroot(node: Node) -> Node:
     if node == None: return None
     if node.cd[".."] == node: # we're at a root
         return node
@@ -266,7 +273,7 @@ def cdroot(node):
     return cdroot(cdone(node, ".."))
     
 # cdone walks one step from node
-def cdone(node, step):
+def cdone(node: Node, step: str) -> Node:
     if step == GHOST:
         print("error: we may not walk into a ghost node via path")
         exit
@@ -282,7 +289,7 @@ def cdone(node, step):
     return None
     
 # exitghost moves ghost node's named children to last named parent. needs to be called after leaving a ghost node
-def exitghost(ghost):
+def exitghost(ghost: Node) -> None:
     # not a ghost? do nothing
     if ghost == None or ghost.name != GHOST:
         return
@@ -303,7 +310,7 @@ def exitghost(ghost):
         del ghost.cd[name]
 
 # pwd: print directory of node
-def pwd(node):
+def pwd(node: Node) -> str:
     out = node.name
     walk = node
     while walk.cd[".."] != walk:
@@ -312,7 +319,7 @@ def pwd(node):
     return out
 
 # createadd creates a named or ghost node and adds it to its parent
-def createadd(name, parent):
+def createadd(name: str, parent: Node) -> Node:
 
     node = Node(name, parent)
     # debug(f"createadd: {pwd(node)}")
@@ -341,7 +348,7 @@ def createadd(name, parent):
 
 # concatcreatechilds concatenates text to node and creates children from text (named or ghost)
 # this is the only place where text gets added to nodes
-def concatcreatechilds(node, text, ctlinenr):
+def concatcreatechilds(node: Node, text: str, ctlinenr: int) -> None:
     global openghost
     openghost = None # why here? not so clear. but we need to reset it somewhere, that only the direct next code chunk can fill a ghost node
 
@@ -381,16 +388,16 @@ def concatcreatechilds(node, text, ctlinenr):
                 createadd(name, node)
 
 # lastnamed returns the last named parent node
-def lastnamed(node):
+def lastnamed(node: Node) -> Node:
     if node == None: return None
     if node.name != GHOST: return node
     return lastnamed(node.cd[".."])
 
-fileforalias = {} # from alias to filenames
+# fileforalias = {} # from alias to filenames
 roots = {}
 
 # getroot returns root referenced by path and chops off root in path, except if there's only one un-aliased root.
-def getroot(path):
+def getroot(path: str) -> (Node, str):
     # remove the leading // of root path
     path = path.strip("/")
     
@@ -400,27 +407,14 @@ def getroot(path):
     # allow splitting file paths and subsequent chunk paths by //?
     # p = path.split("//")
     # return (resolveroot(p[0]), p[1])
-    """
-    # if only one root, it can be made implicit in the path names
-    if len(roots) == 1:
-        # return this one root along with the whole path
-        only = roots[list(roots.keys())[0]]
-        # when we're at the root chunk itsself, we want it out of the path in any case
-        if len(p) == 1 and (p[0] in roots or p[0] in fileforalias):
-            return (only, "")
-        elif p[0] in fileforalias: # the first element is aliasing the one root, keep it
-            return (only, "/".join(p[1:]))
-        else:
-            return (only, path)
-    else: # the only root is omitted in path
-        # return the root as referenced by the first path-part, and the rest of the path
-        return (resolveroot(p[0]), "/".join(p[1:]))
-    """
+
     # return the root as referenced by the first path-part, and the rest of the path
-    return (resolveroot(p[0]), "/".join(p[1:]))
+    # return (resolveroot(p[0]), "/".join(p[1:]))
+    return (roots[p[0]], "/".join(p[1:]))
 
 # resolveroot returns the rootnode for a filename or a alias
-def resolveroot(name):
+# not needed without aliases
+def resolveroot(name: str) -> Node:
     if name in roots: # name is a filename
         return roots[name]
     elif name in fileforalias: # name is an alias
@@ -429,7 +423,7 @@ def resolveroot(name):
     exit
 
 # printtree: print node tree recursively
-def printtree(node):
+def printtree(node: Node) -> None:
     print(f"printtree of {node.name}")
     print(f"ls: {node.ls()}")
     for name in node.ls():
@@ -439,8 +433,8 @@ def printtree(node):
         
 
 ## main runs codetext for text
-def main(f):
-    global fileforalias
+def main(f) -> None:
+    # global fileforalias
     
     lines = f.readlines() # readlines keeps the \n for each line, text concat in nodes relies on that
 
@@ -451,44 +445,23 @@ def main(f):
         # only look at declaration lines
         if not isdeclaration(line):
             continue
-        # debug("#getname 3")
+
         name = getname(line)
 
-        #if re.match(r"\w+\.\w+", name): # todo: path ~ ": " or only one path part
-        
         # we're at a root if the name starts with a //
         if isroot(name):
-            # maybe an alias follows the file name, seperated by ': '
-
-            parts = name.split(": ")
 
             # remove leading slashes of root name
-            filename = re.sub("^//", "", parts[0])
-            # take the first part of path as filename/alias. todo: split at //?
+            filename = re.sub("^//", "", name)
+            # take the first part of path as filename. todo: split at //?
             filename = filename.split("/")[0]
             
             # the root is already created? continue.
-            
-            # todo: if a root is created at its first reference, who
-            # says that the first reference to a root contains its
-            # alias?  should we assume this?  or should we first sift
-            # through all root references and create the root if we
-            # encounter it with its alias?
             if filename in roots:
                 continue
-            # is it an alias? continue. (this assumes aliases need to appear first in the text before they can be referenced.
-            if filename in fileforalias:
-                continue
+
             # create root for this file
             roots[filename] = Node(filename, None)
-            if len(parts) > 1:
-                alias = parts[1]
-                # alias already used for other file
-                if alias in fileforalias and fileforalias[alias] != filename:
-                    print(f"error: alias {alias} already references file {fileforalias[alias]}")
-                    exit
-                # alias it
-                fileforalias[alias] = filename
 
     """ no files, exit """
     if len(roots) == 0:
