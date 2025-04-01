@@ -8,7 +8,8 @@
 
 import re
 import sys
-from typing import Self # to reference Node type in Node
+# from typing import Self # to reference Node type in Node
+from typing_extensions import Self # support python prior to 3.11
 import array
 
 """ code-chunks are represented as nodes in a tree. """
