@@ -79,6 +79,8 @@ def getname(line: str) -> str:
     name = re.sub(r"\n$", "", name)
     # remove the programming language hashtag (if there) (declarations only)
     name = re.sub(r"#\w+$", "", name)
+    # remove the colon (if there) (declarations only) # todo remove from here, make this a check in put()
+    name = re.sub(r":\s*$", "", name)
     
     debug(f"getname({line}): '{name}'")
 
@@ -174,10 +176,10 @@ def put(path: str, text: str, ctlinenr: int) -> None:
     # path = path.strip("/") 
 
     # if at file path, take only the path and chop off the alias
-    debug(f"path: {path}")
-    if re.match(r"^//", path): 
-        parts = path.split(": ")
-        path = parts[0]
+    #debug(f"path: {path}")
+    #if re.match(r"^//", path): 
+    #    parts = path.split(": ")
+    #    path = parts[0]
     
     # create a ghostnode if called for
     if path == "." or path == "" and openghost != None:

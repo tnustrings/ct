@@ -1,5 +1,7 @@
 # codetext
 
+code with text
+
 codetext lets you write computer programs where the code is
 embedded in text like graphics or images floating in a document. it's
 a bit like a jupyter notebook with the addition that code chunks are
@@ -10,19 +12,22 @@ here's an example:
 ```
 begin a file named foo.py.
 
-``//foo.py
+``//foo.py:
 print("ooh, baby you're a fool to py") 
 if bar {
   ``bar``
 }
 ``
 
+when we open a chunk for the first time, like //foo.py above,
+it is followed by a colon.
+
 the preceeding // in //foo.py marks this code chunk as a file root.
 
 chunk names are noted as paths, e.g. /bar for the chunk named bar in
 the last opened file. we put some code into the /bar chunk.
 
-``/bar
+``/bar:
    print("my bar")
    ``baz``
    ``boz``
@@ -30,7 +35,7 @@ the last opened file. we put some code into the /bar chunk.
 
 we can use relative paths and reference the previous chunk (/bar) via .
 
-``./baz
+``./baz:
    my = "baz code"
 ``
 
@@ -40,7 +45,10 @@ this would be baz' absolute path:
    and it makes me 
 ``
 
-and this would be it's path starting from the file:
+this appends to the baz chunk. when we append, we don't write the
+colon after the chunk name.
+
+this would be it's path starting from the file:
 
 ``//foo.py/bar/baz
    wonder why
@@ -56,7 +64,7 @@ if we would like to change to baz's sibling boz now, we could say
 ../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
 in foo.
 
-``/*/boz
+``/*/boz:
    print("in boz")
 ``
 
@@ -85,14 +93,14 @@ go back via ..
 
 we open a second file, named zoo.py.
 
-``//zoo.py
+``//zoo.py:
   welcome to the zoo
   ``dolphins``
 ``
 
 now the last opened file is zoo.py, so /dolphins takes us to the chunk in zoo.py
 
-``/dolphins
+``/dolphins:
   print("are there dolphins in the zoo?")
 ``
 
