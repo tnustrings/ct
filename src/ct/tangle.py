@@ -29,6 +29,8 @@ class Node:
         self.ghostchilds = []
         # for each text line, ctlinenr holds its original line nr in ct file
         self.ctlinenr = {}
+        # has this node been declared by a colon ':'
+        self.hasbeendeclared = False
         
     # ls lists the named childs
     def ls(self):
@@ -38,21 +40,12 @@ class Node:
 # debug offers a turn-offable print
 def debug(s: str):
     i = 0
-    # print(s)
+    print(s)
     
-# isdeclaration returns true if line is the declaration line of a code chunk
-def isdeclaration(line: str) -> bool:
-    # return re.match(r".*<<.*>>=", line)
-    starttick = bool(re.search(r"^``[^\`]*$", line))
-    wordchar = bool(re.search(r"^``.*\w+.*$", line))
-    ret = starttick and wordchar
-    debug(f"isdeclaration {line}: {ret}")
-    return starttick and wordchar
-
 # isname returns true if line is the referencing name line of a code chunk
 def isname(line: str) -> bool:
     ret = bool(re.match(r".*``.*``", line))
-    debug(f"isname {line}: {ret}")
+    # debug(f"isname {line}: {ret}")
     return ret
 
 # isdblticks says if the line consists of two ticks only
@@ -60,13 +53,13 @@ def isname(line: str) -> bool:
 def isdblticks(line: str) -> bool:
     # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
     ret = bool(re.match(r"^``$", line))
-    debug(f"isend {line}: {ret}")
+    #debug(f"isend {line}: {ret}")
     return ret
 
-# isroot says whether the name is a root
-def isroot(name: str) -> bool:
+# fromroot says whether the name starts from a root
+def fromroot(name: str) -> bool:
     ret = bool(re.match(r"^//", name))
-    debug(f"isroot {name}: {ret}")
+    #debug(f"isroot {name}: {ret}")
     return ret
 
 # getname gets the chunkname from a declaration or in-chunk reference
@@ -80,9 +73,9 @@ def getname(line: str) -> str:
     # remove the programming language hashtag (if there) (declarations only)
     name = re.sub(r"#\w+$", "", name)
     # remove the colon (if there) (declarations only) # todo remove from here, make this a check in put()
-    name = re.sub(r":\s*$", "", name)
+    # name = re.sub(r":\s*$", "", name)
     
-    debug(f"getname({line}): '{name}'")
+    # debug(f"getname({line}): '{name}'")
 
     return name
 
@@ -160,38 +153,48 @@ def put(path: str, text: str, ctlinenr: int) -> None:
     global openghost
     global currentnode
 
-    debug("put(" + path + ")")
-    
-    #if currentnode != None:
-    #    print(f"current node in put: {pwd(currentnode)}")
+    # debug("put(" + path + ")")
 
-    #if openghost != None:
-    #    print(f"openghost: {pwd(openghost)}")
-
-    # remove leading and trailing /
-
-    # its ok to remove the leading / because roots have already been
-    # identified and to start a relative path would need to be made
-    # explicit with .
-    # path = path.strip("/") 
-
-    # if at file path, take only the path and chop off the alias
-    #debug(f"path: {path}")
-    #if re.match(r"^//", path): 
-    #    parts = path.split(": ")
-    #    path = parts[0]
-    
     # create a ghostnode if called for
     if path == "." or path == "" and openghost != None:
         currentnode = openghost
+
+        # we enter the ghost node the first time, this implicitly declares it
+        currentnode.hasbeendeclared = True
+        
         openghost = None # necessary?
     else:
-        # if the path would need a node to cling to but there isn't noe
-        if currentnode is None and not isroot(path):
-            print(f"error: there's no file to attach '{path}' to, should it start with '//'?")
+        # named node (new or append) or ghost node (append)
+
+        # if the path would need a node to cling to but there isn't one
+        if currentnode is None and not fromroot(path):
+            print(f"error (line {ctlinenr}): there's no file to attach '{path}' to, should it start with '//'?")
             exit
-        # go to node, if necessary create it along the way
-        currentnode = cdmk(currentnode, path)
+
+        # a colon at the path end indicates that this is a declaration
+        isdeclaration = bool(re.search(r":\s*$", path))
+
+        # remove the colon from path
+        path = re.sub(r":\s*$", "", path)
+
+        # find the node, if not there, create it
+        node = cdmk(currentnode, path)
+
+        # we'd like to check that a node needs to have been declared with : before text can be appended to it. for that, it doesn't help to check if a node is there, cause it might have already been created as a parent of a node. so we introduce a node.hasbeendeclared property.
+
+        if isdeclaration and node.hasbeendeclared:
+            print(f"error (line {ctlinenr}): chunk {path} has already been declared, maybe drop the colon ':'")
+            exit
+        elif not isdeclaration and not node.hasbeendeclared:
+            print(f"error (line {ctlinenr}): chunk {path} needs to be declared with ':' before text is appended to it")
+            exit
+
+        # set that the node has been declared
+        if isdeclaration:
+            node.hasbeendeclared = True
+
+        # all should be well, we can set the node as the current node
+        currentnode = node
 
     # append the text to node
     concatcreatechilds(currentnode, text, ctlinenr)
@@ -200,21 +203,35 @@ def put(path: str, text: str, ctlinenr: int) -> None:
 # cdmk walks the path from node and creates nodes if needed along the way.
 # it returns the node it ended up at
 def cdmk(node: Node, path: str) -> Node:
-    # if path not relative, start from a root
-    #if not (re.match(r"^\.", path) or path == ""): # why path == ""?
-    #    # we may switch roots here. before that, we need to exit open ghosts. cdroot does this along the way
-    #    cdroot(node)
-    #    (node, path) = getroot(path)
 
-    # if file path // switch roots
-    if re.match(r"^//", path):
-        # we need to exit open ghost nodes. cdroot does this along the way.
-        cdroot(node)
-        (node, path) = getroot(path)
-    # if absolute path / go to root
-    elif re.match(r"^/", path):
-        # we need to exit open ghost nodes. cdroot does this along the way.
+    # if our path is absolute (starting from a root), we can't just jump to the root, because when changing positions in the tree, we need to make sure that ghostnodes are exited properly.  cdone takes care of that, so we go backward node by node with cdone.  cdroot does this recursively.
+    if re.match(r"^/", path):
+        # exit open ghost nodes along the way
         node = cdroot(node)
+
+    # if the path starts with // we might need to change roots.
+    if re.match(r"^//", path):
+
+        # remove the leading // of root path
+        path = path.strip("/")
+    
+        # split the path
+        p = path.split("/")
+
+        # the first part of the path is the rootname
+        rootname = p[0]
+
+        # root not there? create it
+        if not rootname in roots:
+            roots[rootname] = Node(rootname, None)
+
+        # set the node to the root
+        node = roots[rootname]
+
+        # stitch the rest of the path together to walk it
+        path = "/".join(p[1:])
+
+    # for absolute paths, we should be at the right root now
 
     # remove leading / of absolute path
     path = path.strip("/")
@@ -298,7 +315,7 @@ def exitghost(ghost: Node) -> None:
         return
     #debug("exitghost")
 
-    """ if we exit a ghost node, we move all its named childs to the ghost node's parent and let the ghostnode be the childs' ghostparent (from where they can get e.g. their indent) """
+    """ if we exit a ghost node, we move all its named childs to the ghost node's parent so that they can be accessed from there and let the ghostnode be the childs' ghostparent (from where they can get e.g. their indent) """
     # for name, child in node.namedchilds.items():
     for name in ghost.ls():
         child = ghost.cd[name]
@@ -364,8 +381,8 @@ def concatcreatechilds(node: Node, text: str, ctlinenr: int) -> None:
     for i, _ in enumerate(newlines):
         # go through the new lines
         node.ctlinenr[N+i] = ctlinenr + i
-    debug("N: " + str(N))
-    debug("node.ctlinenr: " + str(node.ctlinenr))
+    #debug("N: " + str(N))
+    #debug("node.ctlinenr: " + str(node.ctlinenr))
 
     # put the new lines into node
     node.lines.extend(newlines)
@@ -396,34 +413,7 @@ def lastnamed(node: Node) -> Node:
     if node.name != GHOST: return node
     return lastnamed(node.cd[".."])
 
-# fileforalias = {} # from alias to filenames
 roots = {}
-
-# getroot returns root referenced by path and chops off root in path, except if there's only one un-aliased root.
-def getroot(path: str) -> (Node, str):
-    # remove the leading // of root path
-    path = path.strip("/")
-    
-    # split the path
-    p = path.split("/")
-
-    # allow splitting file paths and subsequent chunk paths by //?
-    # p = path.split("//")
-    # return (resolveroot(p[0]), p[1])
-
-    # return the root as referenced by the first path-part, and the rest of the path
-    # return (resolveroot(p[0]), "/".join(p[1:]))
-    return (roots[p[0]], "/".join(p[1:]))
-
-# resolveroot returns the rootnode for a filename or a alias
-# not needed without aliases
-def resolveroot(name: str) -> Node:
-    if name in roots: # name is a filename
-        return roots[name]
-    elif name in fileforalias: # name is an alias
-        return roots[fileforalias[name]]
-    print(f"error: root name '{name}' not found")
-    exit
 
 # printtree: print node tree recursively
 def printtree(node: Node) -> None:
@@ -437,44 +427,12 @@ def printtree(node: Node) -> None:
 
 ## main runs codetext for text
 def main(f) -> None:
-    # global fileforalias
-    
+
     lines = f.readlines() # readlines keeps the \n for each line, text concat in nodes relies on that
 
-    """
-    maybe we need one pass of lines to get all root nodes, so that we know beforehand if there's one or more files. otherwise we keep the first path element of chunk-paths until we arrive at the second file and drop it afterwards, that wouldn't be so good.
-    """
-    for line in lines:
-        # only look at declaration lines
-        if not isdeclaration(line):
-            continue
+    # put in the chunks
 
-        name = getname(line)
-
-        # we're at a root if the name starts with a //
-        if isroot(name):
-
-            # remove leading slashes of root name
-            filename = re.sub("^//", "", name)
-            # take the first part of path as filename. todo: split at //?
-            filename = filename.split("/")[0]
-            
-            # the root is already created? continue.
-            if filename in roots:
-                continue
-
-            # create root for this file
-            roots[filename] = Node(filename, None)
-
-    """ no files, exit """
-    if len(roots) == 0:
-        exit
-
-    # debug("roots: " + str(roots))
-
-    """ now that we got the roots, we can start putting in the chunks. """
-
-    # are we in a chunk
+    # are we in chunk?
     inchunk = False
     # current chunk content
     chunk = ""
@@ -483,17 +441,18 @@ def main(f) -> None:
     # start line of chunk in ct file
     chunkstart = 0
     
-    # for line in lines:
     for i, line in enumerate(lines):
-        #if isdeclaration(line): # at the beginning of chunk remember its name
+
         """we can't decide for sure whether we're opening or closing a chunk by looking at the backticks alone, cause an unnamed chunk is opend the same way it is closed.  so in addition, check that inchunk is false."""
-        if bool(re.search(r"^``[^`]*", line)) and inchunk is False: # at the beginning of chunk remember its name
+        if bool(re.search(r"^``[^`]*", line)) and inchunk is False:
+            # we're in a chunk
             inchunk = True
-            # debug("#getname 4")
+            # remember its path
             path = getname(line)
             # remember the start line of chunk in ct file
             # add two: one, for line numbers start with one not zero, another, for the chunk text starts in the next line, not this
             chunkstart = i+2
+            
         elif isdblticks(line): # at the end of chunk save chunk
             inchunk = False
             # debug(f"calling put for: {path}")
@@ -502,7 +461,7 @@ def main(f) -> None:
             # reset variables
             chunk = ""
             path = None
-            #print("")
+
         elif inchunk: # when we're in chunk remember line
             chunk += line
         #else:
