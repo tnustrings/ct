@@ -48,11 +48,11 @@ def isname(line: str) -> bool:
     # debug(f"isname {line}: {ret}")
     return ret
 
-# isdblticks says if the line consists of two ticks only
+# isdblticks says if the line consists of two ticks only (not considering programming-language hashtag)
 # this could either be a start line of an unnamed chunk or an end line of a chunk
 def isdblticks(line: str) -> bool:
     # return re.match(r"^@$", line) # only allow single @ on line, to avoid mistaking @-code-annotations for doku-markers
-    ret = bool(re.match(r"^``$", line))
+    ret = bool(re.match(r"^``(\s+#\w+)?$", line))
     #debug(f"isend {line}: {ret}")
     return ret
 
