@@ -13,9 +13,9 @@ def main():
     # the .ct file
     parser.add_argument("ct_file", help="codetext file")
     # optional generated file
-    parser.add_argument("generated_file", help="for line number", nargs="?") 
+    parser.add_argument("generated_file", help="go to line number from generated file in ct", nargs="?") 
     # optional line number in generated file
-    parser.add_argument("line_number", help="line number from generated file in ct file", nargs="?")
+    parser.add_argument("line_number", help="line number from generated file", nargs="?")
 
     args = parser.parse_args()
 
