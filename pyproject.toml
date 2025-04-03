@@ -12,7 +12,7 @@ description = "code with text"
 readme = "readme.md"
 requires-python = ">=3.8"
 dependencies = [
-  # you could pyodbc or sqlite3 here, but maybe keep it out and let the user install what she needs?
+  "argparse",  
   "typing_extensions"
 ]
 classifiers = [

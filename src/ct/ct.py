@@ -1,5 +1,5 @@
-# tangle.py: codetext tangle with chunkname paths
-# usage: tangle.main("file.ct")
+# ct.py: codetext tangle with chunkname paths
+# usage: ct.main("file.ct")
 
 # for codetext syntax, see readme.md
 
@@ -71,7 +71,7 @@ def getname(line: str) -> str:
     # remove the newline (declarations only)
     name = re.sub(r"\n$", "", name)
     # remove the programming language hashtag (if there) (declarations only)
-    name = re.sub(r"#\w+$", "", name)
+    name = re.sub(r"\s+#\w+$", "", name)
     # remove the colon (if there) (declarations only) # todo remove from here, make this a check in put()
     # name = re.sub(r":\s*$", "", name)
     

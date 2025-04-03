@@ -145,10 +145,3 @@ doesn't need to.
 
 fix: allow dashes in filename (-)
 
-## possible next steps
-
-a codetext editor plugin that infers the programming language
-of a chunk by the file-root it hangs on and syntax-highlights
-it accordingly might be handy. it could be written on the basis of
-tangle.py and existing org plugins. maybe it could offer to indent
-code-chunks based on their parent chunk.

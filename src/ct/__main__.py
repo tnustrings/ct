@@ -1,24 +1,39 @@
 # __main__ kicks off ct from command line and python -m
 
 import sys
-from ct import tangle
+from ct import ct
+import argparse
 
 # main kicks off tangling
 def main():
-    f = sys.argv[1]
 
+    # parse the command line argument(s)
+    parser = argparse.ArgumentParser()
+
+    # the .ct file
+    parser.add_argument("ct_file", help="codetext file")
+    # optional generated file
+    parser.add_argument("generated_file", help="for line number", nargs="?") 
+    # optional line number in generated file
+    parser.add_argument("line_number", help="line number from generated file in ct file", nargs="?")
+
+    args = parser.parse_args()
+
+    print(args)
+
+    f = args.ct_file
+    
     # normal compilation
-    if len(sys.argv) == 2:
-        tangle.main(open(f))
+    if args.generated_file is None:
+        print("here")
+        ct.main(open(f))
     elif len(sys.argv) == 4:
         # map from line number in generated source to original line number in ct
 
         # name of generated file
-        genfilename = sys.argv[2]
-        genlinenr = int(sys.argv[3])
-        tangle.main(open(f))
+        ct.main(open(f))
 
         # print the original line number
-        print(tangle.ctlinenr[genfilename][genlinenr])
+        print(ct.ctlinenr[args.generated_file][args.line_number])
 
 sys.exit(main())
