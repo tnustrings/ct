@@ -2,10 +2,9 @@
 
 code with text
 
-codetext lets you write computer programs where the code is
-embedded in text like graphics or images floating in a document. it's
-a bit like a jupyter notebook with the addition that code chunks are
-named and you can use the names to nest chunks.
+codetext lets you embed code in text like images or figures floating
+in a document. it's a bit like jupyter notebooks with the addition
+that code chunks are named and you can use the names to nest chunks.
 
 here's an example:
 

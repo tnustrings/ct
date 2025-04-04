@@ -24,4 +24,4 @@ classifiers = [
 ct = "ct:__main__"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ct"]
+packages = ["ct"]
