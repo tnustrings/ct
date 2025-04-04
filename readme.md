@@ -1,6 +1,6 @@
 # codetext
 
-code with text
+code with text (vscode extension [here](https://github.com/tnustrings/ct-vscode)).
 
 codetext lets you write computer programs where the code is
 embedded in text like graphics or images floating in a document. it's
@@ -119,20 +119,20 @@ chunks, otherwise you include it like above.
 `foo.ct` contains the above example. you can assemble `foo.py` and
 `zoo.py` by saying `ct foo.ct`.
 
-## build
-
-build with python:
-
-```
-python3 -m build
-```
-
 ## install
 
 install with pip:
 
 ```
 pip install dist/*.whl
+```
+
+## dev
+
+build with python:
+
+```
+python3 -m build
 ```
 
 ## issues
