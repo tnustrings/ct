@@ -19,13 +19,10 @@ def main():
 
     args = parser.parse_args()
 
-    print(args)
-
     f = args.ct_file
     
     # normal compilation
     if args.generated_file is None:
-        print("here")
         ct.main(open(f))
     elif len(sys.argv) == 4:
         # map from line number in generated source to original line number in ct
