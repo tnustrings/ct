@@ -1,6 +1,7 @@
 # codetext
 
-code with text (vscode extension [here](https://github.com/tnustrings/ct-vscode)).
+code with text (vscode extension
+[here](https://github.com/tnustrings/ct-vscode)).
 
 codetext lets you embed code in text like images or figures floating
 in a document. it's a bit like jupyter notebooks with the addition
@@ -11,7 +12,7 @@ here's an example:
 ```
 begin a file named foo.py.
 
-``//foo.py:
+``//foo.py: #py
 print("ooh, baby you're a fool to py") 
 if bar {
   ``bar``
@@ -26,7 +27,10 @@ the preceeding // in //foo.py marks this code chunk as a file root.
 chunk names are noted as paths, e.g. /bar for the chunk named bar in
 the last opened file. we put some code into the /bar chunk.
 
-``/bar:
+the #py signals the programming language for syntax highlighting, you
+can leave it out.
+
+``/bar: #py
    print("my bar")
    ``baz``
    ``boz``
@@ -34,13 +38,13 @@ the last opened file. we put some code into the /bar chunk.
 
 we can use relative paths and reference the previous chunk (/bar) via .
 
-``./baz:
+``./baz: #py
    my = "baz code"
 ``
 
 this would be baz' absolute path:
 
-``/bar/baz
+``/bar/baz #py
    and it makes me 
 ``
 
@@ -49,13 +53,13 @@ colon after the chunk name.
 
 this would be it's path starting from the file:
 
-``//foo.py/bar/baz
+``//foo.py/bar/baz #py
    wonder why
 ``
 
 when we don't give a path we append to the same chunk.
 
-``
+`` #py
    print("still my baz code.")
 ``
 
@@ -63,7 +67,7 @@ if we would like to change to baz's sibling boz now, we could say
 ../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
 in foo.
 
-``/*/boz:
+``/*/boz: #py
    print("in boz")
 ``
 
@@ -71,7 +75,7 @@ if there's a loop etc, and we would like the next unnamed chunk in the
 text to be inside the loop instead of appended to the end of the chunk
 we can say ``.``:
 
-``
+`` #py
    for i = 0; i < n; i++ {
       ``.``
    }
@@ -80,32 +84,32 @@ we can say ``.``:
 then the following chunk will be put where the ``.`` tag is and not to
 the end of the chunk.
 
-``
+`` #py
    print("inside the loop")
 ``
 
 go back via ..
 
-``
+``../ #py
    print("appending to the foo/bar/baz code again")
 ``
 
 we open a second file, named zoo.py.
 
-``//zoo.py:
+``//zoo.py: #py
   welcome to the zoo
   ``dolphins``
 ``
 
 now the last opened file is zoo.py, so /dolphins takes us to the chunk in zoo.py
 
-``/dolphins:
+``/dolphins: #py
   print("are there dolphins in the zoo?")
 ``
 
 if you'd like to switch back to foo.py like this:
 
-``//foo.py
+``//foo.py #py
   print("hello foo again")
 ``
 
@@ -120,18 +124,20 @@ chunks, otherwise you include it like above.
 
 ## install
 
-install with pip:
+download the [latest
+release](https://github.com/tnustrings/codetext/releases) and install
+with pip:
 
 ```
-pip install dist/*.whl
+$ pip install ct-<version>-py3-none-any.whl
 ```
 
 ## dev
 
-build with python:
+build:
 
 ```
-python3 -m build
+$ python3 -m build
 ```
 
 ## issues

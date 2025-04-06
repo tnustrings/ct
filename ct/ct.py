@@ -15,7 +15,12 @@ import array
 """ code-chunks are represented as nodes in a tree. """
 class Node: 
     def __init__(self, name: str, parent: Self):
+        # the node's name.
+
+        # if it's a ghost node, the name starts with . and is followed by the node's index in its parent's ghostchilds.
+        # although ghost names can never be used to reference or go to a ghost node it's handy if the names of a node's ghostchilds are distinct for latex links # to js
         self.name = name
+        
         self.cd = {}
         self.cd["."] = self
         if parent == None:
@@ -31,11 +36,28 @@ class Node:
         self.ctlinenr = {}
         # has this node been declared by a colon ':'
         self.hasbeendeclared = False
+
+        # at which line of the parent is the child?
+        self.lineinparent = None
+        
+        # at these ct lines, there are children { int -> Node }
+        self.childatctline = {}
+
+        # nchunks: the number of code chunks appended to this node
+        self.nchunks = 0
+
+        # this node is referenced from the ith chunk in the parent node
+        self.iparentchunk = None
         
     # ls lists the named childs
     def ls(self):
         # return all except . and ..
         return [k for k in self.cd.keys() if k != "." and k != ".."]
+
+    # is root says whether it's a root node, that means if it's parent
+    # is itself
+    def isroot(self):
+        return self.cd[".."] == self
 
 # debug offers a turn-offable print
 def debug(s: str):
@@ -56,6 +78,11 @@ def isdblticks(line: str) -> bool:
     #debug(f"isend {line}: {ret}")
     return ret
 
+# isghost says whether it's a ghost-name (starting with a .) # to js
+def isghost(name: str) -> bool:
+    # check that it's not a dot followed by a non-dot, maybe it would be enough to check that it's not a dot followed by a number.
+    return bool(re.match(r"^\.[^\.]", name))
+
 # fromroot says whether the name starts from a root
 def fromroot(name: str) -> bool:
     ret = bool(re.match(r"^//", name))
@@ -68,6 +95,7 @@ def getname(line: str) -> str:
     name = re.sub(r"^[^`]*``", "", line, 1) # 1: count
     # remove the trailing ticks (references only)
     name = re.sub(r"``.*", "", name)
+        
     # remove the newline (openings only)
     name = re.sub(r"\n$", "", name)
     # remove the programming language hashtag (if there) (openings only)
@@ -79,12 +107,16 @@ def getname(line: str) -> str:
 
     return name
 
+# save the ctlines for printtex
+# lines keep their \n
+ctlines = []
+
 # for each generated file, map its line numbers to the original line
 # numbers in ct file
 ctlinenr = {}
 
 # the name of ghost nodes
-GHOST = "#" 
+# GHOST = "#" # to js
 
 # assemble assembles a codechunk recursively, filling up its leading
 # space to leadingspace. this way we can take chunks that are already
@@ -95,7 +127,8 @@ def assemble(node: Node, leadingspace: str, rootname: str, genlinenr: int) -> (s
     global ctlinenr
 
     # if it's a ghost node, remember the last named parent up the tree
-    if node.name == GHOST:
+    # if node.name == GHOST:
+    if isghost(node.name): # to js
         lnp = lastnamed(node)
         
     """ 
@@ -129,7 +162,8 @@ def assemble(node: Node, leadingspace: str, rootname: str, genlinenr: int) -> (s
                 out += outnew #  + "\n" # why add \n?
                 ighost += 1
             else:             # assemble a named child
-                if node.name == GHOST:
+                # if node.name == GHOST:
+                if isghost(node.name): # to js
                     # if we're at a ghost node, we get to the child via the last named ancestor
                     child = lnp.cd[name]
                 else:
@@ -294,9 +328,10 @@ def cdroot(node: Node, ctlinenr: int = None) -> Node:
     
 # cdone walks one step from node
 def cdone(node: Node, step: str, ctlinenr: int = None) -> Node:
-    if step == GHOST:
+    #if step == GHOST:
+    if isghost(step): # to js
         # we may not walk into a ghost node via path
-        print(f"error (line {ctlinenr}): don't use string '{GHOST}' in paths")
+        print(f"error (line {ctlinenr}): node names starting with . are not allowed.") # to js
         exit
     if step == "":
         step = "."
@@ -312,7 +347,8 @@ def cdone(node: Node, step: str, ctlinenr: int = None) -> Node:
 # exitghost moves ghost node's named children to last named parent. needs to be called after leaving a ghost node
 def exitghost(ghost: Node) -> None:
     # not a ghost? do nothing
-    if ghost == None or ghost.name != GHOST:
+    #if ghost == None or ghost.name != GHOST:
+    if ghost == None or not isghost(ghost.name): # to js
         return
     #debug("exitghost")
 
@@ -330,13 +366,17 @@ def exitghost(ghost: Node) -> None:
         # delete child from ghost
         del ghost.cd[name]
 
-# pwd: print directory of node
+# pwd: print the path to a node starting from its root
 def pwd(node: Node) -> str:
     out = node.name
     walk = node
-    while walk.cd[".."] != walk:
+    # append the name of each parent node to the left side of path
+    while walk.cd[".."] != walk: # todo maybe say while not walk.isroot()
         walk = walk.cd[".."]
         out = walk.name + "/" + out
+    # append the file marker
+    if walk.name in roots: # root check necessary?
+        out = "//" + out
     return out
 
 # createadd creates a named or ghost node and adds it to its parent
@@ -346,7 +386,8 @@ def createadd(name: str, parent: Node) -> Node:
     # debug(f"createadd: {pwd(node)}")
     
     # if we're creating a ghost node
-    if node.name == GHOST:
+    # if node.name == GHOST:
+    if isghost(node.name): # todo isghost(name) function? todo add to js
         # debug(f"creating a ghost child for {parent.name}")
         # add it to its parent's ghost nodes
         parent.ghostchilds.append(node)
@@ -355,7 +396,8 @@ def createadd(name: str, parent: Node) -> Node:
         
         """ if the parent is a ghost node, this node could have already been created before with its non-ghost path (an earlier chunk in the codetext might have declared it and put text into it, with children/ghost children, etc), then we move it as a named child from the last named parent to here """
         # if a node with this name is already child of last named parent, move it here
-        if parent.name == GHOST:
+        #if parent.name == GHOST:
+        if isghost(parent.name): # to js
             lnp = lastnamed(node)
             if node.name in lnp.ls():
                 node = lnp.cd[name]
@@ -382,6 +424,15 @@ def concatcreatechilds(node: Node, text: str, ctlinenr: int) -> None:
     for i, _ in enumerate(newlines):
         # go through the new lines
         node.ctlinenr[N+i] = ctlinenr + i
+        # map from the ct line to the node
+        nodeatctline[ctlinenr + i] = node
+
+    # also set nodeatctline for the opening and the closing line of a chunk todo add to js
+    # opening line
+    nodeatctline[ctlinenr - 1] = node
+    # closing line
+    nodeatctline[ctlinenr + len(newlines)] = node
+        
     #debug("N: " + str(N))
     #debug("node.ctlinenr: " + str(node.ctlinenr))
 
@@ -393,28 +444,55 @@ def concatcreatechilds(node: Node, text: str, ctlinenr: int) -> None:
         if not isname(line):
             continue
         """ why do we create the children when concating text? maybe because here we know where childs of ghost nodes end up in the tree. """
-        # debug("#getname 2")
+
+        # the newly created child
+        child = None
+
         name = getname(line)
         if name == ".": # ghost child
             # if we're not at the first ghost chunk here
             if openghost != None:
                 print(f"error (line {ctlinenr+i}): only one ghost child per text chunk allowed")
                 exit
-            # create the ghost chunk
-            openghost = createadd(GHOST, node)
+            # create a ghost chunk
+            # it's name is a dot followed by it's index in the parent's ghostchilds array
+            # openghost = createadd(GHOST, node)
+            openghost = createadd("." + str(len(node.ghostchilds)), node) # todo to js
+            child = openghost
         else: # we're at a name
             # if name not yet in child nodes
             if not name in node.ls():
                 # create a new child node and add it
-                createadd(name, node)
+                child = createadd(name, node)
+        
+        # at which line of the parent is the child?
+        child.lineinparent = i+N
+
+        # at this line, the parent has a child
+        node.childatctline[ctlinenr+i] = child
+
+        # we're just appending the nth chunk of this node, this is the
+        # chunk that references to the child (used for linking to the
+        # specific parent chunk in doc)
+        child.iparentchunk = node.nchunks
+
+    # we've appended a codechunk to the node, so increase the number of chunks
+    # do this after child.iparentchunk was set in the loop
+    node.nchunks += 1
 
 # lastnamed returns the last named parent node
 def lastnamed(node: Node) -> Node:
     if node == None: return None
-    if node.name != GHOST: return node
+    # if node.name != GHOST: return node
+    if not isghost(node.name): return node # to js
     return lastnamed(node.cd[".."])
 
+# the root nodes
 roots = {}
+
+# the node at a ct line (if there is one)
+nodeatctline = {}
+
 
 # printtree: print node tree recursively
 def printtree(node: Node) -> None:
@@ -424,22 +502,39 @@ def printtree(node: Node) -> None:
         printtree(node.cd[name])
     for child in node.ghostchilds:
         printtree(child)
+
+# is this ctline opening a chunk?
+ischunkopening = {} # int to bool
+# is this ctline closing a chunk?
+ischunkclose = {} # int to bool
         
 
-## main runs codetext for text
-def main(f) -> None:
+# ct runs codetext for file
+# todo change to take text?
+def ct(text) -> None:
 
-    global roots, ctlinenr, currentnode, openghost
+    global roots, roottext, currentnode, openghost, ctlinenr, nodeatctline, ctlines, ischunkopening, ischunkclose
     
     # reset variables
     roots = {}
-    # roottext = {}
-    ctlinenr = {}
+    roottext = {}
     currentnode = None
     openghost = None
+    ctlinenr = {}
+    nodeatctline = {}
+    ctlines = []
+    ischunkopening = {}
+    ischunkclose = {}
 
-    lines = f.readlines() # readlines keeps the \n for each line, text concat in nodes relies on that
+    # f.readlines() # readlines keeps the \n for each line, 
+    lines = text.split("\n")
+    # put the \n that split removed back to each line, text concat in nodes relies on that.
+    for (i, _) in enumerate(lines):
+        lines[i] += "\n"
 
+    # save the lines, for totex or so
+    ctlines = lines
+    
     # put in the chunks
 
     # are we in chunk?
@@ -460,8 +555,12 @@ def main(f) -> None:
             # remember its path
             path = getname(line)
             # remember the start line of chunk in ct file
-            # add two: one, for line numbers start with one not zero, another, for the chunk text starts in the next line, not this
-            chunkstart = i+2
+            # add one for the chunk text starts in the next line, not this
+            # (treat the line numbers as 0-indexed)
+            chunkstart = i+1 
+
+            # remember that this line is opening a chunk
+            ischunkopening[i] = True
             
         elif isdblticks(line): # at the end of chunk save chunk
             inchunk = False
@@ -471,6 +570,9 @@ def main(f) -> None:
             # reset variables
             chunk = ""
             path = None
+
+            # remember that this line is closing a chunk
+            ischunkclose[i] = True
 
         elif inchunk: # when we're in chunk remember line
             chunk += line
@@ -492,7 +594,29 @@ def main(f) -> None:
         (out, _) = assemble(roots[filename], "", filename, 1)
         # printtree(roots[filename])
         
+        # save the generated text
+        roottext[filename] = out # todo error out is a tuple?
+
+        
+
+# ctwrite runs codetext and writes the assembled files        
+def ctwrite(text, dir=None):
+
+    # run codetext
+    ct(text)
+
+    # write the assembled text for each root
+    for filename in roots:
+        
+        # assemble the code
+        txt = roottext[filename]
+        # printtree(roots[filename])
+
+        path = filename
         # and write it to file
-        # print(f"write {filename}")
-        f = open(filename, "w")
-        f.write(out)
+        if dir is not None:
+            path = dir + "/" + filename
+        f = open(path, "w")
+        f.write(txt)
+
+

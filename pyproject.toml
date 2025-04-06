@@ -4,7 +4,7 @@ build-backend = "hatchling.build" # name of the python object that frontends use
 
 [project]
 name = "ct"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="tnustrings", email="tnustrings@gmail.com"}
 ]
@@ -22,6 +22,7 @@ classifiers = [
 # the scripts are entry points directly callable from the command line after install with pip
 [project.scripts]
 ct = "ct:__main__"
+# orgtoct = "ct:org"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ct"]

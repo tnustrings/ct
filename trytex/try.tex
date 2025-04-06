@@ -1,0 +1,66 @@
+\documentclass[a4paper]{report}
+\usepackage{answers}
+\input{header}
+
+\begin{document}
+%\pagestyle{noweb}
+
+\title{some programs}
+
+\maketitle
+\tableofcontents
+
+\chapter{intro}\label{ch:intro}
+
+try to include some latex doc
+
+\begin{figure}[h!]
+%  \includegraphics[scale=1.7]{birds.jpg}
+  \caption{The birds}
+  \label{fig:birds}
+\end{figure}
+
+\begin{figure}[h!]
+  %  \includegraphics[scale=1.7]{birds.jpg}
+\begin{verbatim}
+hello birds code
+\end{verbatim}
+  \caption{The beasts}
+  \label{fig:beasts}
+\end{figure}
+
+there are figures for birds (figure \ref{fig:birds}) and beasts (figure \ref{fig:beasts}).
+
+% marginpar puts text in margin
+% see https://www.overleaf.com/learn/latex/Margin_notes
+
+\begin{code}
+  
+  \marginnote{{\scriptsize {\color{gray} \textbf{\ref{code:a}} p2-1\\ b2-2 f2-5}}}
+  % sizes: https://www.overleaf.com/learn/latex/Font_sizes%2C_families%2C_and_styles
+
+\begin{verbatim}
+print('hello world')
+\end{verbatim}
+
+% captionlistentry increases the reference counter without using a \caption
+% see https://tex.stackexchange.com/a/438500
+\captionlistentry{}
+\label{code:a}
+
+\end{code}
+
+and another code
+
+\begin{code}
+\begin{verbatim}
+print('is this gonna reference d?')
+\end{verbatim}
+\captionlistentry{}
+\label{code:b}
+\end{code}
+
+these were chunk \ref{code:a} and chunk \ref{code:b}.
+
+
+\end{document}
