@@ -8,3 +8,8 @@ see https://hongtaoh.com/en/2020/11/13/overleaf-latex-fonts/
 load fonts into ~/.fonts
 
 see https://tex.stackexchange.com/a/554515
+
+
+md to tex
+
+https://tex.stackexchange.com/questions/101717/converting-markdown-to-latex-in-latex
