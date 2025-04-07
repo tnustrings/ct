@@ -1,0 +1,10 @@
+setting fonts.
+
+\usepackage{fontspecs}
+\setmainfont{your font}
+
+see https://hongtaoh.com/en/2020/11/13/overleaf-latex-fonts/
+
+load fonts into ~/.fonts
+
+see https://tex.stackexchange.com/a/554515
