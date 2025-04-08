@@ -1,6 +1,44 @@
 \documentclass[a4paper]{report}
 \usepackage{answers}
-\input{header}
+%\input{header}
+
+% parindent also touches captions?
+\setlength\parindent{0pt}
+
+% tmp
+\usepackage{xcolor}
+
+
+% make captions sans-serif
+% see 2.3 fonts in caption doc: https://texdoc.org/serve/caption/0
+% labelsec: see page 6 in caption doc: https://texdoc.org/serve/caption/0
+\usepackage[font={sf,color=gray,scriptsize},labelsep=space,format=plain,justification=raggedright]{caption}
+
+% make own caption format
+% original plain format: #3 is the text
+%\DeclareCaptionFormat{plain}{#1#2#3\par}
+% the problem seems to be the space between the caption name and the
+% 1.1, it isn't removed when the caption name is empty, so the 1.1
+% becomes indented by that space
+% so we hide the captions and put in an own \marginpar
+% we need the captions for counting
+\DeclareCaptionFormat{myplain}{}
+% use the new format for code-float captions
+\captionsetup[code]{format=myplain}
+
+\usepackage{float}
+\newfloat{code}{h}{code}[chapter] 
+% [chapter]: outer counter. it sets the refs to the codes to be by chapter,
+% like 1-1, 1-2 etc. it doesn't seem to have an effect on the numbers
+% appearing before code captions made with \captionof, use \counterwithin for that. 
+% see https://en.wikibooks.org/wiki/LaTeX/Floats,_Figures_and_Captions
+
+% counterwithin lets the number appearing in code captions be by chapter.
+% it doesn't seem to have an effect on the ref numbering for code though, use
+% the [chapter] option in \newfloat for this.
+\counterwithin{code}{chapter} 
+% unset the name
+\floatname{code}{}
 
 \begin{document}
 %\pagestyle{noweb}
@@ -16,14 +54,14 @@
 
 \chapter{intro}\label{ch:intro}
 
-\usection{try captionof}
+\section{try captionof}
 
 \setcounter{code}{0}
 
 
 % see https://tex.stackexchange.com/a/408504
 %\captionof{code}{\label{code:a}}
-%\marginpar{\captionof{code}{\label{code:a}}}
+\marginpar{\captionof{code}{p2-1\\b1-2 f3-3\label{code:a}}}
 %\captionlistentry{}
 %\label{code:a}
 \begin{verbatim}
@@ -32,11 +70,11 @@ print('hello world')
 
 another chunk
 
-%\captionof{code}{chunk b/\label{code:b}}
+\marginpar{\captionof{code}{p2-3\\b2-4\label{code:b}}}
 %  \captionof{code}{\label{code:b}}
 
-\captionlistentry{}
-\label{code:b}
+%\captionlistentry{}
+%\label{code:b}
 \begin{verbatim}
 print('hi')
 \end{verbatim}
