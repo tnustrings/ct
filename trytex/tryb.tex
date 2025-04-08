@@ -1,0 +1,49 @@
+\documentclass[a4paper]{report}
+\usepackage{answers}
+\input{header}
+
+\begin{document}
+%\pagestyle{noweb}
+
+\title{some programs}
+\date{april 7, 2025}
+
+\maketitle
+
+{\sffamily
+\tableofcontents
+}
+
+\chapter{intro}\label{ch:intro}
+
+\usection{try captionof}
+
+\setcounter{code}{0}
+
+
+% see https://tex.stackexchange.com/a/408504
+%\captionof{code}{\label{code:a}}
+%\marginpar{\captionof{code}{\label{code:a}}}
+%\captionlistentry{}
+%\label{code:a}
+\begin{verbatim}
+print('hello world')
+\end{verbatim}
+
+another chunk
+
+%\captionof{code}{chunk b/\label{code:b}}
+%  \captionof{code}{\label{code:b}}
+
+\captionlistentry{}
+\label{code:b}
+\begin{verbatim}
+print('hi')
+\end{verbatim}
+
+ref to b: \ref{code:b}
+
+
+
+
+\end{document}

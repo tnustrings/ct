@@ -1,4 +1,10 @@
+
+
+
 setting fonts.
+
+non-serif text: \textsf{}
+roman text: \textrm{}
 
 \usepackage{fontspecs}
 \setmainfont{your font}
@@ -13,3 +19,22 @@ see https://tex.stackexchange.com/a/554515
 md to tex
 
 https://tex.stackexchange.com/questions/101717/converting-markdown-to-latex-in-latex
+
+
+in a nested command like   \marginnote{\textsf{\scriptsize{\color{gray}\textbf{\ref{code:a}} p2-1\\ b2-2 f2-5}}} don't put spaces between commands, they seem to change the layout.
+
+
+
+
+problem placing floats: https://tex.stackexchange.com/questions/39017/how-to-influence-the-position-of-float-environments-like-figure-and-table-in-lat
+
+
+
+floats can't be broken over a page: https://tex.stackexchange.com/q/393351
+
+maybe then use \captionof? https://tex.stackexchange.com/a/408504
+
+
+caption doc: https://markov.htwsaar.de/tex-archive/macros/latex/contrib/caption/caption.pdf
+
+capt-of doc: https://texdoc.org/serve/capt-of.pdf/0

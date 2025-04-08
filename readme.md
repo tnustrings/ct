@@ -137,8 +137,11 @@ $ pip install ct-<version>-py3-none-any.whl
 build:
 
 ```
-$ python3 -m build
+$ python -m build
 ```
+
+for some of the latex commands used in generating the doc, see
+[`tex.md`](trytex/tex.md).
 
 ## issues
 

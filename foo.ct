@@ -1,3 +1,5 @@
+# foo
+
 begin a file named foo.py.
 
 ``//foo.py: #py
@@ -83,6 +85,8 @@ go back via ..
 ``
 
 we open a second file, named zoo.py.
+
+# zoo
 
 ``//zoo.py: #py
   welcome to the zoo

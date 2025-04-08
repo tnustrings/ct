@@ -6,17 +6,23 @@
 %\pagestyle{noweb}
 
 \title{some programs}
+\date{april 7, 2025}
 
 \maketitle
+
+{\sffamily
 \tableofcontents
+}
 
 \chapter{intro}\label{ch:intro}
+
+\usection{some figures}
 
 try to include some latex doc
 
 \begin{figure}[h!]
 %  \includegraphics[scale=1.7]{birds.jpg}
-  \caption{The birds}
+  \caption{the birds}
   \label{fig:birds}
 \end{figure}
 
@@ -25,18 +31,21 @@ try to include some latex doc
 \begin{verbatim}
 hello birds code
 \end{verbatim}
-  \caption{The beasts}
+  \caption{the beasts}
   \label{fig:beasts}
 \end{figure}
 
 there are figures for birds (figure \ref{fig:birds}) and beasts (figure \ref{fig:beasts}).
+
+\usection{some code}
 
 % marginpar puts text in margin
 % see https://www.overleaf.com/learn/latex/Margin_notes
 
 \begin{code}
   
-  \marginnote{{\scriptsize {\color{gray} \textbf{\ref{code:a}} p2-1\\ b2-2 f2-5}}}
+  \marginnote{\textsf{\scriptsize{\color{gray}\textbf{\ref{code:a}} p2-1\\ b2-2 f2-5}}}
+  %\marginnote{\textsf{\scriptsize\color{gray}\textbf{\ref{code:a}} p2-1\\ b2-2 f2-5}}
   % sizes: https://www.overleaf.com/learn/latex/Font_sizes%2C_families%2C_and_styles
 
 \begin{verbatim}

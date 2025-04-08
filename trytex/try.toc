@@ -1,1 +1,3 @@
 \contentsline {chapter}{\numberline {1}intro}{2}{chapter.1}%
+\contentsline {section}{\numberline {}some figures}{2}{section*.2}%
+\contentsline {section}{\numberline {}some code}{2}{section*.5}%

@@ -18,6 +18,8 @@ def main():
     parser.add_argument("line_number", help="line number from generated file", nargs="?")
     parser.add_argument("--tex", help="print doc as latex", action="store_true") 
     parser.add_argument("--from-org", help="input is a .org file", action="store_true")
+    parser.add_argument("--mdtotex", help="for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'", nargs=1)
+    parser.add_argument("--shell", help="run mdtotex command as shell script.", action="store_true")
 
     args = parser.parse_args()
 
@@ -34,7 +36,8 @@ def main():
     if args.generated_file is None:
         if args.tex == True:
             # run ct and print tex
-            tex.printtex(text) # todo maybe print(tex.totex(text))
+            # args.mdtotex seems to be a string array
+            tex.printtex(text, mdtotex=args.mdtotex, shell=args.shell) # todo maybe print(tex.totex(text))
         else:
             # run ct and write files
             ct.ctwrite(text)

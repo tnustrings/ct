@@ -2,9 +2,10 @@
 
 from ct import ct
 import re
+import subprocess
 
 # print tex prints latex doc
-def printtex(text):
+def printtex(text, mdtotex:str=None, shell:bool=False):
     
     # run codetext
     ct.ct(text)
@@ -29,9 +30,17 @@ def printtex(text):
     # the current path
     path = None
 
+    # collected text between chunks
+    betweenchunk = ""
+
     for i, line in enumerate(ct.ctlines):
         # are we at a chunk opening line?
         if i in ct.ischunkopening and ct.ischunkopening[i] == True:
+
+            # print the collected doc text
+            doctext(betweenchunk, mdtotex, shell)
+            betweenchunk = ""
+            
             # save inchunk for setting child labels
             inchunk = True
 
@@ -77,13 +86,25 @@ def printtex(text):
 
             # code is a custom float defined in header.tex, it is
             # referenceable like \figure
-            print("\\begin{code}")
+            # print("\\begin{code}")
+
+            # increase the counter
+            # print("\\captionlistentry{}") # doesn't work outside of float, exept if there is one \labelof before, why?
+
+            # put the caption in the margin
+            print("\marginpar{\captionof{code}{" + label(thislabel) + "}}")
+            # set the label
+            # print(label(thislabel))
+
+            
+            #print("\\label{code:b}
+
 
             # put the references on the margin. \marginpar doesn't
             # work in floats
-            marginnote = """\\marginnote{{\\scriptsize
-            {\\color{gray}
-            \\textbf{""" + ref(thislabel) + "}"
+            # try not to include blanks between the commands, they seem to have an effect on the layout
+            # \textsf: sans-serif font
+            marginnote = "\\marginnote{\\textsf{\\scriptsize{\\color{gray}\\textbf{" + ref(thislabel) + "}"
             if parentlabel:
                 marginnote += " p" + ref(parentlabel) + "\\\\"
             if backlabel:
@@ -128,7 +149,6 @@ def printtex(text):
             print("\\begin{verbatim}")
 
             continue
-        
         elif i in ct.ischunkclose and ct.ischunkclose[i]:
             # we're at a closing line
             inchunk = False
@@ -141,19 +161,44 @@ def printtex(text):
             # captionlistentry increases the reference counter without
             # using a \caption
             # see https://tex.stackexchange.com/a/438500
-            print("\\captionlistentry{}")
+            # print("\\captionlistentry{}")
 
             # the label for the code-chunk
-            print(label(thislabel))
+            # print(label(thislabel))
 
             # end the code-chunk
-            print("\\end{code}")
+            # print("\\end{code}")
 
             # and count the chunk number up for this node
             currentchunknum[path] = currentchunknum[path] + 1
         else:
-            # just print the line
-            print(line, end="")
+            if inchunk:
+                # in-chunk line that's not a child reference, just print it
+                print(line, end="")
+            else:
+                # doc-line, collect it, for maybe converting it to tex if asked to
+                betweenchunk += line + "\n"
+
+    # print the last doctext 
+    doctext(betweenchunk, mdtotex, shell)
+
+# doctext prints doc text, converting it to tex if asked to
+def doctext(text, mdtotex, shell:bool=False):
+    # is a command to convert from md to tex?
+    if mdtotex and len(mdtotex) == 1:
+        # do the converting
+        cmd = mdtotex[0]
+        
+        # pass the command split at blanks
+        arr = re.split(r"\s+", cmd)
+        # print("arr: " + str(arr))
+        p = subprocess.run(arr, input=text, capture_output=True, text=True, shell=shell)
+
+        # get the returned text
+        text = p.stdout
+
+    print(text)
+
 
 
 # all helper functions replace slashes in labels with colons
