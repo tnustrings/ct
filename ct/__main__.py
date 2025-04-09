@@ -4,6 +4,7 @@ import sys
 from ct import ct, tex, org
 import argparse
 import os.path
+from pathlib import Path
 
 # main kicks off tangling
 def main():
@@ -30,13 +31,28 @@ def main():
     # no ct file and --tex? generate latex template and header
     if args.ct_file is None:
         if args.tex:
-            tmpl = tex.gettemplate(header=args.header)
+            # no args given
+            if not args.o and not args.header:
+                print("please specify -o for latex doc template file and/or --header for header file")
+                exit()
+            
+            # no header path given
+            if not args.header:
+                # take header.tex as header name, put it in the same
+                # directory as the template file 
+                tmplpath = os.path.dirname(args.o)
+                headerpath = tmplpath + "/header.tex"
+            else:
+                headerpath = args.header
+            
+            tmpl = tex.gettemplate(header=headerpath)
             header = tex.getheader(lowercase=args.lower)
 
             # write template and header
-            # notify if the files is already there
-            checkoverwrite(args.o, tmpl)
-            checkoverwrite(args.header, header)
+            if args.o:
+                # notify if the files is already there
+                checkoverwrite(args.o, tmpl)
+            checkoverwrite(headerpath, header)
 
         return
 
@@ -63,7 +79,9 @@ def main():
                 outname = args.o
             with open(outname, "w") as f:
                 f.write(out)
-                print("wrote " + outname)
+
+                # say which file was written
+                print(outname)
         else:
             # run ct and write files
             ct.ctwrite(text)
@@ -77,12 +95,17 @@ def main():
         print(ct.ctlinenr[args.generated_file][int(args.line_number)-1]) # line numbers are 0-indexed
 
 # checkoverwrite writes text to a file and asks before whether an existing file should be overwritten
-def checkoverwrite(path, text):
+def checkoverwrite(path: str, text: str):
+    if path is None: # is this ok so?
+        return
     if os.path.isfile(path):
         resp = input(f"the file {path} already exists. overwrite it? [Y/n]: ")
         if resp == "Y":
             with open(path, "w") as f:
                 f.write(text)
+
+                # write the generated path
+                print(path)
 
 
 sys.exit(main())

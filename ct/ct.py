@@ -619,4 +619,7 @@ def ctwrite(text, dir=None):
         with open(path, "w") as f:
             f.write(txt)
 
+            # say which file was written
+            print(path)
+
 
