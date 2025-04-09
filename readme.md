@@ -141,7 +141,7 @@ $ python -m build
 ```
 
 for some of the latex commands used in generating the doc, see
-[`tex.md`](trytex/tex.md).
+[`tex.md`](tex/tex.md).
 
 ## issues
 

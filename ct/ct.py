@@ -190,7 +190,7 @@ def put(path: str, text: str, ctlinenr: int) -> None:
     # debug("put(" + path + ")")
 
     # create a ghostnode if called for
-    if path == "." or path == "" and openghost != None:
+    if (path == "." or path == "") and openghost != None:
         currentnode = openghost
 
         # we enter the ghost node the first time, this implicitly declares it
@@ -616,7 +616,7 @@ def ctwrite(text, dir=None):
         # and write it to file
         if dir is not None:
             path = dir + "/" + filename
-        f = open(path, "w")
-        f.write(txt)
+        with open(path, "w") as f:
+            f.write(txt)
 
 
