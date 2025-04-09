@@ -5,11 +5,21 @@ import re
 import subprocess
 from pathlib import Path
 
-# printtex prints latex doc
-def printtex(text, mdtotex:str=None, shell:bool=False):
+# totex gives latex doc for ct text
+def totex(text, ctfile:str=None, mdtotex:str=None, shell:bool=False) -> str:
     
     # run codetext
     ct.ct(text)
+
+    # our returned text
+    out = ""
+
+    # generate message
+    if ctfile:
+        out += f"% this file was generated from {ctfile}. please edit {ctfile}."
+    else:
+        out += f"% this file is generated. please edit the .ct file from which it stems."
+    
 
     """ referencing specific code-chunks appended to a node: we'd like
     to be able to jump backward and forward to where text was appended
@@ -42,7 +52,7 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
         if i in ct.ischunkopening and ct.ischunkopening[i] == True:
 
             # print the collected doc text
-            doctext(betweenchunk, mdtotex, shell)
+            out += doctext(betweenchunk, mdtotex, shell)
             # reset the between chunk text
             betweenchunk = ""
             
@@ -100,12 +110,12 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
             # print("\\captionlistentry{}") # doesn't work outside of float, exept if there is one \labelof before, why?
 
             # insert vertical space before code chunk, since we set the verbatim margins to zero
-            print("\n\\vspace{5mm}\n") # maybe use \addvspace\medskipamount
+            out += "\n\\vspace{5mm}\n\n" # maybe use \addvspace\medskipamount
 
 
             # put the caption in the margin
             # this caption is invisible, it's for ref-counting
-            print("\marginpar{\captionof{code}{" + label(thislabel) + "}}")
+            out += "\marginpar{\captionof{code}{" + label(thislabel) + "}}\n"
             # set the label
             # print(label(thislabel))
 
@@ -127,12 +137,12 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
 
             # close color, scriptsize and marginnote
             marginnote += "}}}"
-            print(marginnote)
+            out += marginnote + "\n"
 
             # start the chunk
-            print("\\begin{lstlisting}")
+            out += "\\begin{lstlisting}\n"
 
-            print(printpath)
+            out += printpath + "\n"
             
             continue
         elif inchunk == True and ct.isname(line):
@@ -148,7 +158,7 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
 
             # leave verbatim for the ref and label
             if not outsideverbatim:
-                print("\\end{lstlisting}")
+                out += "\\end{lstlisting}"
 
                 # if we come to a child ref line, we set outsideverbatim
                 # to true even though we're in a chunk, to avoid empty
@@ -159,10 +169,10 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
             else:
                 # if we haven't just left the lstlisting, seperate the
                 # child refs by a line break
-                print("\\\\")
+                out += "\\\\" + "\n"
 
             # make a phantom section, so that links pointing to this label directly jump to this line and not to the start of the latex section this label is in
-            print("\\phantomsection")
+            out += "\\phantomsection" + "\n"
 
 
             
@@ -173,7 +183,8 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
             leadingspace = re.search("^\s*", line).group()
 
             # lstinline apparently doesn't print spaces. so use texttt and replace the spaces to ~ to get them printed. make sure that the style here (\small\texttt) is the same as passed to \lstset in the preamble in the basicstyle argument
-            print("\\small{\\texttt{" + re.sub(" ", "~", leadingspace) + "}}", end="") # let it be on the same line as the link
+            # don't break the line, let it be on the same line as the following link
+            out += "\\small{\\texttt{" + re.sub(" ", "~", leadingspace) + "}}"
             # delete the spaces we just printed
             line = re.sub(r"^\s*", "", line)
 
@@ -186,13 +197,13 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
             text += "\\textsf{\\scriptsize{\\color{gray}{" + ref(childpath + ":0") + "}}}"
             
             # make the link
-            print(hyperref(childpath + ":0", text))
+            out += hyperref(childpath + ":0", text) + "\n"
 
 
             
             # make label for incoming links # todo let a parent hyperref in marginnote point to this
             
-            print(label(nodepath + " => " + childpath))
+            out += label(nodepath + " => " + childpath) + "\n"
 
             # don't begin a verbatim again, cause the next line might also be a child ref, and a \end{verbatim}\begin{verbatim} would put in an empty line
             # print("\\begin{lstlisting}")
@@ -205,7 +216,7 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
             # close the verbatim if needed
             # if the last chunk-line(s) were a child-reference, we're not in verbatim anymore, check for that.
             if not outsideverbatim:
-                print("\\end{lstlisting}")
+                out += "\\end{lstlisting}" + "\n"
 
             # now we're outside verbatim in any case
             outsideverbatim = True
@@ -214,7 +225,7 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
                 
 
             # insert vertical space before code chunk, since we set the verbatim margins to zero
-            print("\n\\vspace{5mm}\n")
+            out += "\n\\vspace{5mm}\n" + "\n"
 
 
             # captionlistentry increases the reference counter without
@@ -234,21 +245,24 @@ def printtex(text, mdtotex:str=None, shell:bool=False):
             if inchunk:
                 # if we were put outside verbatim by a child reference, put us inside verbatim again
                 if outsideverbatim:
-                    print("\\begin{lstlisting}")
+                    out += "\\begin{lstlisting}" + "\n"
                     outsideverbatim = False
                     
                 # in-chunk line that's not a child reference, just print it
-                print(line, end="")
+                # the ct lines come with linebreak, don't add it
+                out += line
             else:
                 # doc-line, collect it, for maybe converting it to tex if asked to
-                betweenchunk += line + "\n"
+                betweenchunk += line 
 
     # print the last doctext 
-    doctext(betweenchunk, mdtotex, shell)
+    out += doctext(betweenchunk, mdtotex, shell)
+
+    return out
 
 
-# doctext prints doc text, converting it to tex if asked to
-def doctext(text, mdtotex, shell:bool=False):
+# doctext converts the text between chunks from md to tex if asked to
+def doctext(text, mdtotex, shell:bool=False) -> str:
     # is a command to convert from md to tex?
     if mdtotex and len(mdtotex) == 1:
         # do the converting
@@ -262,7 +276,7 @@ def doctext(text, mdtotex, shell:bool=False):
         # get the returned text
         text = p.stdout
 
-    print(text)
+    return text + "\n" # newline necessary?
 
 
 
