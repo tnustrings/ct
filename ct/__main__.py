@@ -13,9 +13,9 @@ def main():
     # the .ct file
     parser.add_argument("ct_file", help="codetext file")
     # optional generated file
-    parser.add_argument("generated_file", help="go to line number from generated file in ct", nargs="?") 
+    parser.add_argument("generated_file", help="generated file line number in ct", nargs="?") 
     # optional line number in generated file
-    parser.add_argument("line_number", help="line number from generated file", nargs="?")
+    parser.add_argument("line_number", help="generated file line number", nargs="?")
     parser.add_argument("--tex", help="print doc as latex", action="store_true") 
     parser.add_argument("--from-org", help="input is a .org file", action="store_true")
     parser.add_argument("--mdtotex", help="for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'", nargs=1)
