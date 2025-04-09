@@ -100,12 +100,15 @@ def checkoverwrite(path: str, text: str):
         return
     if os.path.isfile(path):
         resp = input(f"the file {path} already exists. overwrite it? [Y/n]: ")
-        if resp == "Y":
-            with open(path, "w") as f:
-                f.write(text)
+        if resp != "Y":
+            return
 
-                # write the generated path
-                print(path)
+    # we got a yes
+    with open(path, "w") as f:
+        f.write(text)
+
+        # write the generated path
+        print(path)
 
 
 sys.exit(main())
