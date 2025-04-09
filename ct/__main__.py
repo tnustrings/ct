@@ -65,7 +65,7 @@ def main():
         ct.ct(text)
 
         # print the original line number
-        print(ct.ctlinenr[args.generated_file][args.line_number-1]) # line numbers are 0-indexed
+        print(ct.ctlinenr[args.generated_file][int(args.line_number)-1]) # line numbers are 0-indexed
 
 # checkoverwrite writes text to a file and asks before whether an existing file should be overwritten
 def checkoverwrite(path, text):
