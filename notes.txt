@@ -38,3 +38,11 @@ maybe then use \captionof? https://tex.stackexchange.com/a/408504
 caption doc: https://markov.htwsaar.de/tex-archive/macros/latex/contrib/caption/caption.pdf
 
 capt-of doc: https://texdoc.org/serve/capt-of.pdf/0
+
+
+apr 9
+
+for some of the latex commands used in generating the doc, see
+[`tex.md`](tex/tex.md).
+
+tex.md is old

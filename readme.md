@@ -140,9 +140,6 @@ build:
 $ python -m build
 ```
 
-for some of the latex commands used in generating the doc, see
-[`tex.md`](tex/tex.md).
-
 ## issues
 
 codetext takes a chunk's indent from the first chunk line, and tries
