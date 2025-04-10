@@ -16,9 +16,9 @@ def totex(text, ctfile:str=None, mdtotex:str=None, shell:bool=False) -> str:
 
     # generate message
     if ctfile:
-        out += f"% this file was generated from {ctfile}. please edit {ctfile}."
+        out += f"% this file was generated from {ctfile}. please edit {ctfile}.\n"
     else:
-        out += f"% this file is generated. please edit the .ct file from which it stems."
+        out += f"% this file is generated. please edit the .ct file from which it stems.\n"
     
 
     """ referencing specific code-chunks appended to a node: we'd like
@@ -437,9 +437,13 @@ headertex = r"""
 \renewcommand{\thefigure}{\thechapter-\arabic{figure}}
 
 % number sections like 1-1, 1-2 instead of 1.1, 1.2
-\renewcommand{\thesection}{\thechapter-\arabic{section}}
+% \renewcommand{\thesection}{\thechapter-\arabic{section}}
+
 % no section number
-%\renewcommand{\thesection}{}
+\renewcommand{\thesection}{}
+\renewcommand{\thesubsection}{}
+\renewcommand{\thesubsubsection}{}
+
 
 % just display numbers for chapters, without preceding 'Chapter'
 \renewcommand{\chaptername}{}

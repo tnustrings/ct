@@ -41,7 +41,7 @@ def main():
                 # take header.tex as header name, put it in the same
                 # directory as the template file 
                 tmplpath = os.path.dirname(args.o)
-                headerpath = tmplpath + "/header.tex"
+                headerpath = tmplpath + "/cthead.tex"
             else:
                 headerpath = args.header
             
