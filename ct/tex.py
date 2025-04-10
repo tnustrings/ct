@@ -139,10 +139,15 @@ def totex(text, ctfile:str=None, mdtotex:str=None, shell:bool=False) -> str:
             marginnote += "}}}"
             out += marginnote + "\n"
 
+            # make the chunk path sans-serif
+            #printpath = re.sub("/", "\\/", printpath)
+            printpath = re.sub("_", "\\_", printpath)
+            out += "\n"
+            out += "\\textsf{\\footnotesize{\\color{gray}{" + printpath + "}}}\n"
+            out += "\n"
+
             # start the chunk
             out += "\\begin{lstlisting}\n"
-
-            out += printpath + "\n"
             
             continue
         elif inchunk == True and ct.isname(line):
@@ -380,10 +385,10 @@ headertex = r"""
 \usepackage[hidelinks]{hyperref}
 
 % remove vertical space before and after verbatim, see https://tex.stackexchange.com/a/43336
-\usepackage{etoolbox}
-\makeatletter
-\preto{\@verbatim}{\topsep=0pt \partopsep=0pt }
-\makeatother
+%\usepackage{etoolbox}
+%\makeatletter
+%\preto{\@verbatim}{\topsep=0pt \partopsep=0pt }
+%\makeatother
 
 % use floatrow to position caption to the left of figure / code?
 % error: do not use float package with floatrow
