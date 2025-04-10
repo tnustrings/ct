@@ -66,7 +66,8 @@ def debug(s: str):
     
 # isname returns true if line is the referencing name line of a code chunk
 def isname(line: str) -> bool:
-    ret = bool(re.match(r".*``.*``", line))
+    # the name needs to contain at least one non-tick to distinguish it from three-tick ``` markdown code-block openings
+    ret = bool(re.match(r".*``[^`]+``", line))
     # debug(f"isname {line}: {ret}")
     return ret
 
