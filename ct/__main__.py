@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--from-org", help="input is a .org file", action="store_true")
     parser.add_argument("--mdtotex", nargs=1, help="for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'")
     parser.add_argument("--shell", action="store_true", help="run mdtotex command as shell script.")
-    parser.add_argument("-o", help="out file for latex generation. run with --tex. if no ct file given, doc template is produced.")
+    parser.add_argument("-o", help="out file for latex generation. run with with --tex. if no ct file given, latex template is produced.")
     parser.add_argument("--header", help="latex template header file")
     parser.add_argument("--lower", action="store_true", help="lowercase tex template")
 
@@ -38,10 +38,15 @@ def main():
             
             # no header path given
             if not args.header:
-                # take header.tex as header name, put it in the same
-                # directory as the template file 
-                tmplpath = os.path.dirname(args.o)
-                headerpath = tmplpath + "/cthead.tex"
+                # take cthead as header name, put it in the same
+                # directory as the template file
+                
+                if os.path.isdir(args.o):
+                    tmplpath = args.o
+                else:
+                    # it's a file
+                    tmplpath = os.path.dirname(args.o) # dirname also chops element off dir
+                headerpath = os.path.join(tmplpath, "cthead.tex")
             else:
                 headerpath = args.header
             
@@ -71,12 +76,17 @@ def main():
             # run ct and print tex
             # args.mdtotex seems to be a string array
             out = tex.totex(text, ctfile=args.ct_file, mdtotex=args.mdtotex, shell=args.shell) # todo maybe print(tex.totex(text))
-            # take the name for the out file from the ct file if none given
+
+            # if no out name given, take it from the ct file.
+            a = args.ct_file.split(".")
             if args.o is None:
-                a = args.ct_file.split(".")
                 outname = a[0] + ".tex"
-            else:
+            elif os.path.isdir(args.o): # if just dir given, use the name from the ct file
+                outname = os.path.join(args.o, a[0] + ".tex")
+            else: # path to file given
                 outname = args.o
+
+            # write 
             with open(outname, "w") as f:
                 f.write(out)
 

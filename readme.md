@@ -3,9 +3,9 @@
 code with text (vscode extension
 [here](https://github.com/tnustrings/ct-vscode)).
 
-codetext lets you embed code in text like images or figures floating
-in a document. it's a bit like jupyter notebooks with the addition
-that code chunks are named and you can use the names to nest chunks.
+codetext lets you embed code in text. it's a bit like jupyter
+notebooks with the addition that code chunks are named and can be
+nested like directories.
 
 here's an example:
 

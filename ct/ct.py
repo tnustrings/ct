@@ -624,3 +624,7 @@ def ctwrite(text, dir=None):
             print(path)
 
 
+
+if __name__=="__main__":
+    print("hi __main__")
+    
