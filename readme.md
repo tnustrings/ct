@@ -1,11 +1,10 @@
-# codetext
+# codetext (ct)
 
-code with text (vscode extension
-[here](https://github.com/tnustrings/ct-vscode)).
+code with text (vscode extension [install](https://marketplace.visualstudio.com/items?itemName=tnustrings.codetext) or [github](https://github.com/tnustrings/ct-vscode)).
 
-codetext lets you embed code in text like images or figures floating
-in a document. it's a bit like jupyter notebooks with the addition
-that code chunks are named and you can use the names to nest chunks.
+codetext lets you embed code in text. it's a bit like jupyter
+notebooks with the addition that code chunks are named and can be
+nested like directories.
 
 here's an example:
 
@@ -124,12 +123,18 @@ chunks, otherwise you include it like above.
 
 ## install
 
-download the [latest
-release](https://github.com/tnustrings/codetext/releases) and install
-with pip:
+*on linux*
+
+download [ct-<version>.deb](https://github.com/tnustrings/codetext/releases) and install with apt:
 
 ```
-$ pip install ct-<version>-py3-none-any.whl
+sudo apt install ./ct-<version>.deb
+```
+
+*on any os with go*
+
+```
+go install https://github.com/tnustrings/codetext/
 ```
 
 ## dev
@@ -137,7 +142,7 @@ $ pip install ct-<version>-py3-none-any.whl
 build:
 
 ```
-$ python -m build
+make
 ```
 
 ## issues

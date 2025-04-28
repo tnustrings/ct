@@ -1,10 +1,16 @@
-# sketch
+all: bin/ct 
 
-publish:
+bin/ctmini: ctmini/main.go ct/ct.go
+	# build without org and tex code that comes from ct files
+	rm -f ct/tex.go ct/org.go # -f: don't give an error message
+	cd ct; go build -o ../bin/ctmini
 
-gh release create v<version> ./dist/ct-<version>-py3-none-any.whl
+bin/ct: main.ct ct/ct.go ct/org.ct ct/tex.ct fc/fc.ct
+	./bin/ctmini main.ct
+	cd ct; ../bin/ctmini org.ct; ../bin/ctmini tex.ct
+	cd ct; go build; cd ..
+	# cd ctmini; go build; cd ..
+	go build -o bin/ct
 
-update an asset:
-
-gh release delete-asset v<version> ct-<version>-py3-none-any.whl -y
-gh release upload v<version> ./dist/ct-<version>-py3-none-any.whl
+.PHONY deb:
+	cd deb; make
