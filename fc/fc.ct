@@ -1,0 +1,99 @@
+# fc
+
+some functions
+
+``//fc.go:
+package fc
+import (
+    ``import``
+)
+``keys``
+``is_dir``
+``dir``
+``stem``
+``handle``
+``
+
+Keys returns the keys of a map, sorted.
+
+``/keys:
+func Keys[K cmp.Ordered, V any] (m map[K]V) []K {
+    var names []K
+    for name, _ := range m {
+        names = append(names, name)
+    }
+    slices.Sort(names)
+    return names
+}
+``
+
+import cmp and slices.
+
+``/import:
+    "cmp"
+    "slices"
+``
+
+IsDir says whether the given path is a directory.
+
+``/is_dir:
+func IsDir(path string) bool {
+    file, e := os.Open(path)
+    if e != nil { return false } // maybe error cause file doesn't exist
+    defer file.Close()
+    fileinfo, e := file.Stat()
+    Handle(e)
+    return fileinfo.IsDir()
+}
+``
+
+import os.
+
+``/import
+    "os"
+``
+
+Dir gives the directory of path (that is either the path itself or the path without the file name at the end).
+
+``/dir:
+func Dir(path string) string {
+    if IsDir(path) {
+        return path
+    } else {
+        return filepath.Dir(path)
+    }
+}
+``
+
+Stem gives filename without extension.
+
+``/stem:
+func Stem(path string) string {
+    base := filepath.Base(path)
+    ext := filepath.Ext(base)
+    return strings.TrimSuffix(base, ext)
+}
+``
+
+import filepath and strings.
+
+``/import
+    "path/filepath"
+    "strings"
+``
+
+Handle handles an error by printing it
+
+``/handle:
+func Handle(err error) {
+    if err != nil {
+        log.Fatal(err)
+    }
+}
+``
+
+import log.
+
+``/import
+    "log"
+``

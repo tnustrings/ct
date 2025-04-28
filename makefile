@@ -1,23 +1,16 @@
-# name
-name = "codetext"
+all: bin/ct 
 
-# get the version from github tag
-# delete the v from the version tag cause python build seems to strip it as well
-version = $(shell git tag | tail -1 | tr -d v)
+bin/ctmini: ctmini/main.go ct/ct.go
+	# build without org and tex code that comes from ct files
+	rm -f ct/tex.go ct/org.go # -f: don't give an error message
+	cd ct; go build -o ../bin/ctmini
 
-all:
-	python3 -m build --no-isolation
+bin/ct: main.ct ct/ct.go ct/org.ct ct/tex.ct fc/fc.ct
+	./bin/ctmini main.ct
+	cd ct; ../bin/ctmini org.ct; ../bin/ctmini tex.ct
+	cd ct; go build; cd ..
+	# cd ctmini; go build; cd ..
+	go build -o bin/ct
 
-install:
-	make
-	pip install "./dist/${name}-${version}-py3-none-any.whl" --no-deps --force-reinstall
-
-doc:
-	pdoc --html "${name} --force
-
-publish:
-	gh release create "v${version}" "./dist/${name}-${version}-py3-none-any.whl"
-
-publish-update: # if an asset was already uploaded, delete it before uploading again
-	gh release delete-asset "v${version}" "${name}-${version}-py3-none-any.whl" -y
-	gh release upload "v${version}" "./dist/${name}-${version}-py3-none-any.whl"
+.PHONY deb:
+	cd deb; make
