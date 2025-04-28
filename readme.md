@@ -121,17 +121,44 @@ chunks, otherwise you include it like above.
 `foo.ct` contains the above example. you can assemble `foo.py` and
 `zoo.py` by saying `ct foo.ct`.
 
+## use
+
+assemble code from a ct file.
+
+``
+ct foo.ct
+``
+
+get line from assembled file `foo.py` in ct file (for debugging).
+
+``
+ct -g foo.py:1 foo.ct
+``
+
+generate latex from the .ct document.
+
+``
+ct -tex -o pdf/foo-incl.tex foo.ct
+``
+
+if you leave out foo.ct, you can generate a latex document wrapper,
+into which you can include the the foo-incl.tex we just made.
+
+``
+ct -tex -o pdf/foo.tex
+``
+
 ## install
 
-*on linux*
+**on linux**
 
-download [ct-<version>.deb](https://github.com/tnustrings/codetext/releases) and install with apt:
+download [ct-\<version\>.deb](https://github.com/tnustrings/codetext/releases) and install with apt:
 
 ```
 sudo apt install ./ct-<version>.deb
 ```
 
-*on any os with go*
+**on any os with go**
 
 ```
 go install https://github.com/tnustrings/codetext/
