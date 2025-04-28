@@ -152,16 +152,7 @@ $ ct -tex -o pdf/foo.tex
 include `foo-in.tex` in `pdf/foo.tex`.
 
 ```
-pdf/foo.tex:
-
 \input{foo-in}
-```
-
-and run latex:
-
-```
-$ cd pdf
-$ pdflatex foo.tex
 ```
 
 ## install
@@ -177,7 +168,7 @@ sudo apt install ./ct-<version>.deb
 **on any os with go**
 
 ```
-go install https://github.com/tnustrings/codetext/
+go install github.com/tnustrings/codetext@latest
 ```
 
 ## dev
