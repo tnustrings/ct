@@ -150,7 +150,7 @@ ct -tex -o pdf/foo.tex
 
 ## install
 
-*on linux*
+**on linux**
 
 download [ct-\<version\>.deb](https://github.com/tnustrings/codetext/releases) and install with apt:
 
@@ -158,7 +158,7 @@ download [ct-\<version\>.deb](https://github.com/tnustrings/codetext/releases) a
 sudo apt install ./ct-<version>.deb
 ```
 
-*on any os with go*
+**on any os with go**
 
 ```
 go install https://github.com/tnustrings/codetext/
