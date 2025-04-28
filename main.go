@@ -7,7 +7,7 @@ import (
   "path"
   "strconv"
   "strings"
-  "tnustrings/ct/ct"
+  "github.com/tnustrings/codetext/ct"
   "tnustrings/fc"
 )
 func main() {
