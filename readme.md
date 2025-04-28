@@ -125,28 +125,44 @@ chunks, otherwise you include it like above.
 
 assemble code from a ct file.
 
-``
-ct foo.ct
-``
+```
+$ ct foo.ct
+```
 
-get line from assembled file `foo.py` in ct file (for debugging).
+get line number from an assembled file in the .ct file. here, line 1
+of `foo.py` is on line 6 in `foo.ct`.
 
-``
-ct -g foo.py:1 foo.ct
-``
+```
+$ ct -g foo.py:1 foo.ct
+6
+```
 
-generate latex from the .ct document.
+generate latex from `foo.ct` named `foo-in.tex`.
 
-``
-ct -tex -o pdf/foo-incl.tex foo.ct
-``
+```
+$ ct -tex -o pdf/foo-in.tex foo.ct
+```
 
-if you leave out foo.ct, you can generate a latex document wrapper,
-into which you can include the the foo-incl.tex we just made.
+if you leave out the ct file, you generate a latex document wrapper.
 
-``
-ct -tex -o pdf/foo.tex
-``
+```
+$ ct -tex -o pdf/foo.tex
+```
+
+include `foo-in.tex` in `pdf/foo.tex`.
+
+```
+pdf/foo.tex:
+
+\input{foo-in}
+```
+
+and run latex:
+
+```
+$ cd pdf
+$ pdflatex foo.tex
+```
 
 ## install
 
