@@ -18,16 +18,18 @@ if bar {
 }
 ``
 
-when we open a chunk for the first time, like //foo.py above,
-it is followed by a colon.
+the two ticks `` open and close a code chunk.
 
-the preceeding // in //foo.py marks this code chunk as a file root.
+the two slashes // mark the following path to begin with a file name,
+foo.py.
 
-chunk names are noted as paths, e.g. /bar for the chunk named bar in
-the last opened file. we put some code into the /bar chunk.
+when we open a chunk for the first time, its path is followed by a
+colon.
 
-the #py signals the programming language for syntax highlighting, you
-can leave it out.
+the #py signals optional syntax highlighting.
+
+our chunk //foo.py references a child-chunk, ``bar``. we put code into
+bar by opening a second code chunk, /bar.
 
 ``/bar: #py
    print("my bar")
@@ -35,44 +37,30 @@ can leave it out.
    ``boz``
 ``
 
-we can use relative paths and reference the previous chunk (/bar) via .
+bar has two child chunks, ``baz`` and ``boz``. to put code into baz,
+we could use the full path /bar/baz, or the relative path starting
+from bar, ./baz.
 
 ``./baz: #py
    my = "baz code"
 ``
 
-this would be baz' absolute path:
-
-``/bar/baz #py
-   and it makes me 
-``
-
-this appends to the baz chunk. when we append, we don't write the
-colon after the chunk name.
-
-this would be it's path starting from the file:
-
-``//foo.py/bar/baz #py
-   wonder why
-``
-
-when we don't give a path we append to the same chunk.
+if you leave out the path you stay in the same chunk.
 
 `` #py
-   print("still my baz code.")
+   print("still in baz")
 ``
 
 if we would like to change to baz's sibling boz now, we could say
 ../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
 in foo.
 
-``/*/boz: #py
+``../boz: #py
    print("in boz")
 ``
 
-if there's a loop etc, and we would like the next unnamed chunk in the
-text to be inside the loop instead of appended to the end of the chunk
-we can say ``.``:
+if there's a loop or so, and we'd like the next unnamed chunk to be
+inside of the loop we can specify where it should be put with ``.``:
 
 `` #py
    for i = 0; i < n; i++ {
@@ -80,17 +68,18 @@ we can say ``.``:
    }
 ``
 
-then the following chunk will be put where the ``.`` tag is and not to
-the end of the chunk.
+now the following chunk will be put where the ``.`` is instead of
+simply being appended to the previous chunk.
 
 `` #py
    print("inside the loop")
 ``
 
-go back via ..
+you need to exit this 'ghost'-chunk via ../ to append code after the
+loop again:
 
 ``../ #py
-   print("appending to the foo/bar/baz code again")
+   print("after the loop")
 ``
 
 we open a second file, named zoo.py.
@@ -100,21 +89,25 @@ we open a second file, named zoo.py.
   ``dolphins``
 ``
 
-now the last opened file is zoo.py, so /dolphins takes us to the chunk in zoo.py
+chunk paths assume to start at the last opened file (unless the
+filename is explicitly given). our last opened file is zoo.py now, so
+the path /dolphins adds code to zoo.py.
 
 ``/dolphins: #py
   print("are there dolphins in the zoo?")
 ``
 
-if you'd like to switch back to foo.py like this:
+you can switch back to a chunk in foo.py like this:
 
-``//foo.py #py
-  print("hello foo again")
+``//foo.py/bar #py
+  print("hello bar again")
 ``
 
-if there's only one output file in the codetext and if you don't give
-this file an alias, you leave out its name when referring to child
-chunks, otherwise you include it like above.
+now our file is assumed to be foo.py again.
+
+``
+  print("still in foo.py")
+``
 
 ```
 
@@ -189,3 +182,7 @@ doesn't need to.
 
 fix: allow dashes in filename (-)
 
+error ct -g wiki.go:25 wiki.ct
+2025/05/06 11:30:43 there is no wiki.go
+
+but there is a wiki.go

@@ -661,7 +661,8 @@ func Ct(text string) bool {
     chclo = make(map[int]bool)
 
     // f.readlines() # readlines keeps the \n for each line, 
-    lines := strings.Split(text, "\n")
+    // take care of dos line breaks \r\n
+    lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
     // put the \n that split removed back to each line, text concat in nodes relies on that.
     for i, _ := range lines {
         lines[i] += "\n"

@@ -18,10 +18,10 @@ func Orgtoct(text string) string {
 }
 ``
 
-get the lines.
+get the lines, take care of dos \r\n linebreaks.
 
 ``
-    lines := strings.Split(text, "\n")
+    lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 ``
 
 init the loop variables.
