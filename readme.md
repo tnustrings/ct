@@ -24,9 +24,9 @@ the two slashes // mark the following path to begin with a file name,
 foo.py.
 
 when we open a chunk for the first time, its path is followed by a
-colon.
+colon, like here.
 
-the #py signals optional syntax highlighting.
+the #py signals syntax highlighting, you can leave it out.
 
 our chunk //foo.py references a child-chunk, ``bar``. we put code into
 bar by opening a second code chunk, /bar.
@@ -37,9 +37,9 @@ bar by opening a second code chunk, /bar.
    ``boz``
 ``
 
-bar has two child chunks, ``baz`` and ``boz``. to put code into baz,
-we could use the full path /bar/baz, or the relative path starting
-from bar, ./baz.
+bar in turn references two child chunks, ``baz`` and ``boz``. to put
+code into baz, we could use the full path /bar/baz, or the relative
+path starting from bar, ./baz.
 
 ``./baz: #py
    my = "baz code"
@@ -51,7 +51,7 @@ if you leave out the path you stay in the same chunk.
    print("still in baz")
 ``
 
-if we would like to change to baz's sibling boz now, we could say
+if we would like to change to baz's sibling chunk boz now, we could say
 ../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
 in foo.
 
@@ -68,8 +68,8 @@ inside of the loop we can specify where it should be put with ``.``:
    }
 ``
 
-now the following chunk will be put where the ``.`` is instead of
-simply being appended to the previous chunk.
+now the following unnamed chunk won't be appended to the end of the
+previous chunk but instead where the ``.`` is.
 
 `` #py
    print("inside the loop")
@@ -111,35 +111,35 @@ now our file is assumed to be foo.py again.
 
 ```
 
-`foo.ct` contains the above example. you can assemble `foo.py` and
-`zoo.py` by saying `ct foo.ct`.
+the file `foo.ct` contains the above example. you can assemble your
+code chunks into `foo.py` and `zoo.py` by saying `ct foo.ct`.
 
 ## use
 
 assemble code from a ct file.
 
 ```
-$ ct foo.ct
+ct foo.ct
 ```
 
 get line number from an assembled file in the .ct file. here, line 1
 of `foo.py` is on line 6 in `foo.ct`.
 
 ```
-$ ct -g foo.py:1 foo.ct
+ct -g foo.py:1 foo.ct
 6
 ```
 
 generate latex from `foo.ct` named `foo-in.tex`.
 
 ```
-$ ct -tex -o pdf/foo-in.tex foo.ct
+ct -tex -o pdf/foo-in.tex foo.ct
 ```
 
 if you leave out the ct file, you generate a latex document wrapper.
 
 ```
-$ ct -tex -o pdf/foo.tex
+ct -tex -o pdf/foo.tex
 ```
 
 include `foo-in.tex` in `pdf/foo.tex`.
