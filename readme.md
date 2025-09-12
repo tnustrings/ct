@@ -1,6 +1,6 @@
 # ct - codetext
 
-code with text (vscode extension [install](https://marketplace.visualstudio.com/items?itemName=tnustrings.codetext) or [github](https://github.com/tnustrings/ct-vscode)).
+code with text (vscode extension [here](https://marketplace.visualstudio.com/items?itemName=tnustrings.codetext)).
 
 ct lets you embed code in text. it's a bit like jupyter notebooks with
 the addition that code chunks are named and can be nested like
