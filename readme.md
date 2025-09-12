@@ -43,15 +43,16 @@ path starting from bar, ./baz.
    my = "baz code"
 ``
 
-if you'd like to stay in the same chunk you can leave out its path.
+if you'd like to stay in the chunk you were in before you can just
+write the two ticks `` and leave out its path.
 
 `` #py
    print("still in baz")
 ``
 
 if you'd like to change to baz's sibling chunk boz, you could say
-../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
-in foo.
+../boz, /bar/boz, //foo.py/bar/boz or, if boz's name is unique in foo,
+/*/boz.
 
 ``../boz: #py
    print("in boz")
@@ -73,7 +74,7 @@ previous chunk but instead where the ``.`` is.
    print("inside the loop")
 ``
 
-you need to exit this 'ghost'-chunk via ../ to append code after the
+you need to exit this 'ghost'-chunk via ../ to put code after the
 loop again:
 
 ``../ #py
