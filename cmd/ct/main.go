@@ -7,8 +7,8 @@ import (
   "path"
   "strconv"
   "strings"
-  ct "github.com/tnustrings/codetext"
-  "github.com/tnustrings/codetext/internal/fc"
+  "github.com/tnustrings/ct"
+  "github.com/tnustrings/ct/internal/fc"
 )
 func main() {
     fl_tex := flag.Bool("tex", false, "print doc as latex")

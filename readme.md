@@ -1,4 +1,4 @@
-# codetext (ct)
+# ct - codetext
 
 code with text (vscode extension [install](https://marketplace.visualstudio.com/items?itemName=tnustrings.codetext) or [github](https://github.com/tnustrings/ct-vscode)).
 

@@ -12,8 +12,8 @@ import (
   "path"
   "strconv"
   "strings"
-  ct "github.com/tnustrings/codetext"
-  "github.com/tnustrings/codetext/internal/fc"
+  "github.com/tnustrings/ct"
+  "github.com/tnustrings/ct/internal/fc"
 )
 ``main``
 ``checkoverwrite``
