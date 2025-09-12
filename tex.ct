@@ -10,7 +10,7 @@ import (
     "fmt"
     "regexp"
     "strings"
-    "tnustrings/fc"
+    "github.com/tnustrings/codetext/internal/fc"
 )
 ``totex``
 ``convert``
@@ -472,7 +472,7 @@ func label(label string) string {
 
 pageref gives a pageref.
 
-``
+``/pageref:
 func pageref(label string) string {
     // try replacing slashes
     r := regexp.MustCompile("/")

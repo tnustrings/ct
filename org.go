@@ -4,7 +4,7 @@ import (
     "regexp"
 )
 func Orgtoct(text string) string {
-    lines := strings.Split(text, "\n")
+    lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
     // are we in a code chunk?
     insrc := false
     // are we in a doc chunk?

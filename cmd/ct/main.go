@@ -1,8 +1,3 @@
-# main
-
-the main cli.
-
-``//main.go:
 package main
 import (
   "bufio"
@@ -12,32 +7,10 @@ import (
   "path"
   "strconv"
   "strings"
-  "github.com/tnustrings/codetext/ct"
-  "tnustrings/fc"
+  ct "github.com/tnustrings/codetext"
+  "github.com/tnustrings/codetext/internal/fc"
 )
-``main``
-``checkoverwrite``
-``
-
-# main function
-
-main kicks off tangling or tex generating.
-
-``/main:
 func main() {
-  ``flags``
-  ``tex tmpl``
-  ``read``
-  ``convert org``
-  ``compile``
-}
-``
-
-# flags
-
-get the flags.
-
-``./flags:
     fl_tex := flag.Bool("tex", false, "print doc as latex")
     fl_from_org := flag.Bool("from_org", false, "input is a .org file")
     fl_mdtotex := flag.String("mdtotex", "", "for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'")
@@ -48,52 +21,21 @@ get the flags.
     fl_lower := flag.Bool("lower", false, "lowercase tex template")
 
     flag.Parse()
-``
-
-get the positional args.
-
-``
     args := flag.Args()
-``
-
-take the ctfile as positional arg.
-
-be able to handle more than one ct file?
-
-``
     var ctfile string
     switch len(args) {
+    case 0:
+         fmt.Println("please specify a .ct file: ct myfile.ct");
+         os.Exit(0);
     case 1:
     	ctfile = args[0]
     }
-``
-
-if no ct file was given and the -tex flag is set generate the latex
-template and header.
-
-``/main/tex tmpl:
     if ctfile == "" {
         if *fl_tex {
-	    ``.``
-	}
-        return
-    }
-``
-
-if no names for the ouput files were given, give an error asking for a
-name.
-
-``
             if *fl_o == "" && *fl_header == "" {
                 fmt.Println("please specify -o for latex template file and/or --header for header file")
                 os.Exit(0)
             }
-``
-
-if only the header name isn't given, put the header into the same
-directory as the template file (and name it cthead.tex).
-
-``
 	    var headerpath string
             if *fl_header == "" {
                 tmplpath := fc.Dir(*fl_o)
@@ -101,11 +43,6 @@ directory as the template file (and name it cthead.tex).
             } else {
                 headerpath = *fl_header
 	    }
-``
-
-generate template and header, and write them.
-
-``
             tmpl := ct.TexTemplate(headerpath)
             header := ct.TexHeader(*fl_lower)
 
@@ -114,54 +51,27 @@ generate template and header, and write them.
                 checkoverwrite(*fl_o, tmpl)
 	    }
             checkoverwrite(headerpath, header)
-``
-
-## read and convert
-
-if a codetext file was given, read it.
-
-``/main/read:
+	}
+        return
+    }
     b, _ := os.ReadFile(ctfile)
     text := string(b)
-``
-
-should the text be converted from org to ct?
-
-``/main/convert org:
     if *fl_from_org {
         text = ct.Orgtoct(text)
         // print(text)
     }
-``
-
-## compile
-
-now comes the part of main involving assembly of the given ct file.
-
-``/main/compile:
     if *fl_g != "" { 
-        ``go to``
+        a := strings.Split(*fl_g, ":")
+	genfile := a[0]
+	genline, _ := strconv.Atoi(a[1])
+        ct.Ct(text)
+	ctline, err := ct.Ctline(genfile, genline-1)
+	fc.Handle(err)
+        fmt.Println(ctline+1)
     } else if len(args) == 1 {
         if *fl_tex == true {
-	    ``tex``
-        } else {
-	    ``ctwrite``
-	}
-    } 
-``
-
-### generate tex
-
-generate a tex file from ct.
-
-``/main/compile/tex:
 	    var out string
 	    out = ct.Totex(text, ctfile, *fl_mdtotex)
-``
-
-if no out name for tex given, take it from the ct file.
-
-``
             a := strings.Split(ctfile, ".")
 	    var outname string
             if *fl_o == "" {
@@ -171,89 +81,22 @@ if no out name for tex given, take it from the ct file.
             } else { // path to file given
                 outname = *fl_o
 	    }
-``
-
-write and say which file was written.
-
-``
 	    f, _ := os.Create(outname)
 	    defer f.Close()
 	    _, _ = f.WriteString(out)
 	    fmt.Println(outname)
-``
-
-### ct write
-
-run ct and write file(s) into the same dir as mother ct-file.
-
-``/main/compile/ctwrite:
+        } else {
             ct.Ctwrite(text, fc.Dir(ctfile))
-``
-
-### go to line
-
-map from line number in generated source to original line number in ct.
-
-get the name of the generated file and line number from flag arg.
-
-``/main/compile/go to:
-        a := strings.Split(*fl_g, ":")
-	genfile := a[0]
-	genline, _ := strconv.Atoi(a[1])
-``
-
-first run ct without writing files.
-
-``
-        ct.Ct(text)
-``
-
-then print the original line number.
-
-subtract and add 1 to go from one-indexed input number to zero-indexed
-and vice versa.
-
-``
-	ctline, err := ct.Ctline(genfile, genline-1)
-	fc.Handle(err)
-        fmt.Println(ctline+1)
-``
-
-# checkoverwrite
-
-checkoverwrite writes text to a file and asks before whether an
-existing file should be overwritten.
-
-``/checkoverwrite:
-func checkoverwrite(path string, text string) {
-    ``.``
+	}
+    } 
 }
-``
-
-return on empty path. ok so?
-
-open it.
-
-``
+func checkoverwrite(path string, text string) {
     if path == "" { 
         return
     }
     f, err := os.Open(path)
     defer f.Close()
-``
-
-we'd like to check if the file already exists. for now, if there is no
-error, the file exists. (is it ok to check like this?)
-
-``
     if err == nil {
-        ``ask``
-    } 
-``
-
-ask whether to overwrite.
-
-``./ask:
         fmt.Printf("the file %s already exists. overwrite it? [Y/n]: ", path)
 	reader := bufio.NewReader(os.Stdin)
 	resp, _ := reader.ReadString('\n')
@@ -262,19 +105,9 @@ ask whether to overwrite.
 	    //fmt.Println("return")
             return
 	}
-``
-
-create the file in any case, if it already exists, to truncate
-(overwrite) it. see https://stackoverflow.com/a/72181498
-
-``../
+    } 
     f, err = os.Create(path)
     fc.Handle(err)
-``
-
-write and print which file was written.
-
-``
     f.WriteString(text)
     fmt.Println(path)
-``
+}

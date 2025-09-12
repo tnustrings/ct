@@ -1,16 +1,14 @@
 all: bin/ct 
 
-bin/ctmini: ctmini/main.go ct/ct.go
-	# build without org and tex code that comes from ct files
-	rm -f ct/tex.go ct/org.go # -f: don't give an error message
-	cd ct; go build -o ../bin/ctmini
+bin/ct: bin/ctmini cmd/ct/main.ct ct.go org.ct tex.ct
+	# make a mini-ct that doesn't depend on ct code itsself, use it to build the ct code for the main program
+	./bin/ctmini cmd/ct/main.ct; mv main.go cmd/ct # ctmini doesn't move outputfiles into their corresponding directories
+	./bin/ctmini org.ct
+	./bin/ctmini tex.ct
+	go build -o bin/ct cmd/ct/main.go
 
-bin/ct: main.ct ct/ct.go ct/org.ct ct/tex.ct fc/fc.ct
-	./bin/ctmini main.ct
-	cd ct; ../bin/ctmini org.ct; ../bin/ctmini tex.ct
-	cd ct; go build; cd ..
-	# cd ctmini; go build; cd ..
-	go build -o bin/ct
+bin/ctmini: # build ctmini
+	go build -o bin/ctmini cmd/ctmini/main.go
 
 .PHONY deb:
 	cd deb; make

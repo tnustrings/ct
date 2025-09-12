@@ -5,7 +5,7 @@ import (
     "fmt"
     "regexp"
     "strings"
-    "tnustrings/fc"
+    "github.com/tnustrings/codetext/internal/fc"
 )
 func Totex(text string, ctfile string, mdtotex string) string {
     Ct(text)

@@ -20,11 +20,11 @@ if bar {
 
 the two ticks `` open and close a code chunk.
 
-the two slashes // mark the following path to begin with a file name,
-foo.py.
+the two slashes // mark the path that follows to begin with a file
+name, foo.py.
 
-when we open a chunk for the first time, its path is followed by a
-colon, like here.
+when we open a chunk for the first time, a colon is put after its
+path, like here.
 
 the #py signals syntax highlighting, you can leave it out.
 
@@ -38,20 +38,20 @@ bar by opening a second code chunk, /bar.
 ``
 
 bar in turn references two child chunks, ``baz`` and ``boz``. to put
-code into baz, we could use the full path /bar/baz, or the relative
+code into baz, you could use the full path /bar/baz or the relative
 path starting from bar, ./baz.
 
 ``./baz: #py
    my = "baz code"
 ``
 
-if you leave out the path you stay in the same chunk.
+if you'd like to stay in the same chunk you can leave out its path.
 
 `` #py
    print("still in baz")
 ``
 
-if we would like to change to baz's sibling chunk boz now, we could say
+if you'd like to change to baz's sibling chunk boz, you could say
 ../boz, /bar/boz, //foo.py/bar/boz or /*/boz, if boz's name is unique
 in foo.
 
@@ -59,8 +59,8 @@ in foo.
    print("in boz")
 ``
 
-if there's a loop or so, and we'd like the next unnamed chunk to be
-inside of the loop we can specify where it should be put with ``.``:
+if there's a loop or so, and you'd like the next unnamed chunk to be
+inside of the loop you can specify where it should be put with ``.``:
 
 `` #py
    for i = 0; i < n; i++ {

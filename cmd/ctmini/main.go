@@ -4,7 +4,7 @@ package main
 
 import (
     "os" 
-    "tnustrings/ct/ct"
+    ct "github.com/tnustrings/codetext" 
 )
 
 // main kicks off tangling or tex generating
