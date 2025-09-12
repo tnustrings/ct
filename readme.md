@@ -160,8 +160,10 @@ sudo apt install ./ct-<version>.deb
 
 **on any os with go**
 
+install go from [here](https://go.dev/doc/install), then run
+
 ```
-go install github.com/tnustrings/codetext@latest
+go install github.com/tnustrings/codetext/cmd/ct@latest
 ```
 
 ## dev
