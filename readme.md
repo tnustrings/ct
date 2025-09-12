@@ -2,9 +2,9 @@
 
 code with text (vscode extension [install](https://marketplace.visualstudio.com/items?itemName=tnustrings.codetext) or [github](https://github.com/tnustrings/ct-vscode)).
 
-codetext lets you embed code in text. it's a bit like jupyter
-notebooks with the addition that code chunks are named and can be
-nested like directories.
+ct lets you embed code in text. it's a bit like jupyter notebooks with
+the addition that code chunks are named and can be nested like
+directories.
 
 here's an example:
 
@@ -18,17 +18,15 @@ if bar {
 }
 ``
 
-the two ticks `` open and close a code chunk.
+the line
 
-the two slashes // mark the path that follows to begin with a file
-name, foo.py.
+   ``//foo.py: #py
 
-when we open a chunk for the first time, a colon is put after its
-path, like here.
+opens a code chunk named //foo.py. the two slashes // mark foo.py as a
+file. the colon : indicates that this chunk is opened for the first
+time. #py signals syntax highlighting, you can leave it out.
 
-the #py signals syntax highlighting, you can leave it out.
-
-our chunk //foo.py references a child-chunk, ``bar``. we put code into
+the chunk //foo.py references a child-chunk, ``bar``. we put code into
 bar by opening a second code chunk, /bar.
 
 ``/bar: #py
