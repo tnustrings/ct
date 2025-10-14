@@ -272,6 +272,7 @@ create the file in any case, if it already exists, to truncate
 
 ``../
     f, err = os.Create(path)
+    // defer f.Close()?
     fc.Handle(err)
 ``
 
