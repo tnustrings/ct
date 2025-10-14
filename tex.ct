@@ -34,7 +34,7 @@ func Totex(text string, ctfile string, mdtotex string) string {
 run codetext.
 
 ``
-    Ct(text)
+    Ct(text, ctfile)
 ``
 
 `out` collects our returned text.
@@ -125,7 +125,7 @@ outsideverbatim helps us keep track of child ref formatting in chunks.
 get the node and the path.
 
 ``
-            node := nat[i] // todo change this to include the opening line
+            node := nodeatict[i] // todo change this to include the opening line
             path = pwd(node)
 ``
 
@@ -248,7 +248,7 @@ if we're at a reference to a child.
 get the node and the child.
 
 ``../child ref:
-            node := nat[i]
+            node := nodeatict[i]
             nodepath := pwd(node)
             child := node.chat[i]
             childpath := pwd(child)

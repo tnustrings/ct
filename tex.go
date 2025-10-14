@@ -8,7 +8,7 @@ import (
     "github.com/tnustrings/ct/internal/fc"
 )
 func Totex(text string, ctfile string, mdtotex string) string {
-    Ct(text)
+    Ct(text, ctfile)
     out := ""
     if ctfile != "" {
         out += fmt.Sprintf("% this file was generated from %s. please edit %s.\n", ctfile, ctfile)
@@ -37,7 +37,7 @@ func Totex(text string, ctfile string, mdtotex string) string {
             betweentext = ""
             inchunk = true
             outsideverbatim = false
-            node := nat[i] // todo change this to include the opening line
+            node := nodeatict[i] // todo change this to include the opening line
             path = pwd(node)
             if _, ok := chunu[path]; !ok {
                 chunu[path] = 0
@@ -84,7 +84,7 @@ func Totex(text string, ctfile string, mdtotex string) string {
             out += "\\begin{lstlisting}\n"
 	    continue
 	} else if inchunk == true && isname(line) {
-            node := nat[i]
+            node := nodeatict[i]
             nodepath := pwd(node)
             child := node.chat[i]
             childpath := pwd(child)

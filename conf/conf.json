@@ -1,0 +1,26 @@
+{
+    "proglang": [
+	    {
+		"name": "python",
+		"ext": ["py"],
+		"fncre": "def\\s+(?P<name>[\\w\\d_]+)\\s*\\(.*\\).*:",
+		"cmtmark": "#",
+		"cmtindent": "    ",
+		"fnccmt": "after"
+	    },
+	    {
+		"name": "go",
+		"ext": ["go"],
+		"fncre": "func\\s+(?P<name>[\\w\\d_]+).*\\(.*\\).*{", 
+		"cmtmark": "//",
+		"fnccmt": "before"
+	    },
+	    {
+		"name": "javascript",
+		"ext": ["js", "ts"],
+		"fncre": "(function)?\\s+(?P<name>[\\w\\d_]+).*\\(.*\\)\\s*{", 
+		"cmtmark": "//",
+		"fnccmt": "before"
+	    }
+    ]
+}

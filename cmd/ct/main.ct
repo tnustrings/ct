@@ -9,7 +9,9 @@ import (
   "flag"
   "fmt"
   "os"
+  "log"
   "path"
+  "path/filepath"
   "strconv"
   "strings"
   "github.com/tnustrings/ct"
@@ -190,7 +192,10 @@ write and say which file was written.
 run ct and write file(s) into the same dir as mother ct-file.
 
 ``/main/compile/ctwrite:
-            ct.Ctwrite(text, fc.Dir(ctfile))
+            err := ct.Ctwrite(text, fc.Dir(ctfile), filepath.Base(ctfile))
+	    if err != nil {
+	      log.Fatal(err)
+	    }
 ``
 
 ### go to line
@@ -208,7 +213,7 @@ get the name of the generated file and line number from flag arg.
 first run ct without writing files.
 
 ``
-        ct.Ct(text)
+        ct.Ct(text, filepath.Base(ctfile))
 ``
 
 then print the original line number.

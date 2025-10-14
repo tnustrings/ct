@@ -4,7 +4,9 @@ import (
   "flag"
   "fmt"
   "os"
+  "log"
   "path"
+  "path/filepath"
   "strconv"
   "strings"
   "github.com/tnustrings/ct"
@@ -16,7 +18,7 @@ func main() {
     fl_mdtotex := flag.String("mdtotex", "", "for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'")
     //parser.add_argument("--shell", action="store_true", help="run mdtotex command as shell script.")
     fl_o := flag.String("o", "", "out file for latex generation. run with with --tex. if no ct file given, latex template is produced.")
-    fl_g := flag.String("g", "", "go to line, from generated file to ct file. e.g. -g genfile.js:9")
+    fl_l := flag.String("l", "", "for a line number from a generated file, which line is it in the ct file? e.g. -l genfile.js:9")
     fl_header := flag.String("header", "", "latex template header file")
     fl_lower := flag.Bool("lower", false, "lowercase tex template")
 
@@ -60,11 +62,11 @@ func main() {
         text = ct.Orgtoct(text)
         // print(text)
     }
-    if *fl_g != "" { 
-        a := strings.Split(*fl_g, ":")
+    if *fl_l != "" { 
+        a := strings.Split(*fl_l, ":")
 	genfile := a[0]
 	genline, _ := strconv.Atoi(a[1])
-        ct.Ct(text)
+        ct.Ct(text, filepath.Base(ctfile))
 	ctline, err := ct.Ctline(genfile, genline-1)
 	fc.Handle(err)
         fmt.Println(ctline+1)
@@ -86,7 +88,10 @@ func main() {
 	    _, _ = f.WriteString(out)
 	    fmt.Println(outname)
         } else {
-            ct.Ctwrite(text, fc.Dir(ctfile))
+            err := ct.Ctwrite(text, fc.Dir(ctfile), filepath.Base(ctfile))
+	    if err != nil {
+	      log.Fatal(err)
+	    }
 	}
     } 
 }
@@ -107,6 +112,7 @@ func checkoverwrite(path string, text string) {
 	}
     } 
     f, err = os.Create(path)
+    // defer f.Close()?
     fc.Handle(err)
     f.WriteString(text)
     fmt.Println(path)
