@@ -43,7 +43,7 @@ get the flags.
     fl_mdtotex := flag.String("mdtotex", "", "for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'")
     //parser.add_argument("--shell", action="store_true", help="run mdtotex command as shell script.")
     fl_o := flag.String("o", "", "out file for latex generation. run with with --tex. if no ct file given, latex template is produced.")
-    fl_g := flag.String("g", "", "go to line, from generated file to ct file. e.g. -g genfile.js:9")
+    fl_l := flag.String("l", "", "for a line number from a generated file, which line is it in the ct file? e.g. -l genfile.js:9")
     fl_header := flag.String("header", "", "latex template header file")
     fl_lower := flag.Bool("lower", false, "lowercase tex template")
 
@@ -142,7 +142,7 @@ should the text be converted from org to ct?
 now comes the part of main involving assembly of the given ct file.
 
 ``/main/compile:
-    if *fl_g != "" { 
+    if *fl_l != "" { 
         ``go to``
     } else if len(args) == 1 {
         if *fl_tex == true {
@@ -200,7 +200,7 @@ map from line number in generated source to original line number in ct.
 get the name of the generated file and line number from flag arg.
 
 ``/main/compile/go to:
-        a := strings.Split(*fl_g, ":")
+        a := strings.Split(*fl_l, ":")
 	genfile := a[0]
 	genline, _ := strconv.Atoi(a[1])
 ``

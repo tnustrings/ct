@@ -125,7 +125,7 @@ get line number from an assembled file in the .ct file. here, line 1
 of `foo.py` is on line 6 in `foo.ct`.
 
 ```
-ct -g foo.py:1 foo.ct
+ct -l foo.py:1 foo.ct
 6
 ```
 
@@ -183,7 +183,7 @@ doesn't need to.
 
 fix: allow dashes in filename (-)
 
-error ct -g wiki.go:25 wiki.ct
+error ct -l wiki.go:25 wiki.ct
 2025/05/06 11:30:43 there is no wiki.go
 
 but there is a wiki.go
