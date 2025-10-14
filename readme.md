@@ -17,6 +17,46 @@ if bar {
   ``bar``
 }
 ``
+write something code in the ``bar`` chunk:
+
+``/bar:
+  print("hi, bar")
+``
+```
+
+if this is saved as `mycode.ct`, extract the code by calling `ct mycode.ct`.
+
+## install
+
+**on linux**
+
+download [ct-\<version\>.deb](https://github.com/tnustrings/codetext/releases) and install with apt:
+
+```
+sudo apt install ./ct-<version>.deb
+```
+
+**on any os with go**
+
+install go from [here](https://go.dev/doc/install), then run
+
+```
+go install github.com/tnustrings/codetext/cmd/ct@latest
+```
+
+## longer example
+
+this is a longer ct example.
+
+```
+begin a file named foo.py.
+
+``//foo.py: #py
+print("ooh, baby you're a fool to py") 
+if bar {
+  ``bar``
+}
+``
 
 the line
 
@@ -145,24 +185,6 @@ include `foo-in.tex` in `pdf/foo.tex`.
 
 ```
 \input{foo-in}
-```
-
-## install
-
-**on linux**
-
-download [ct-\<version\>.deb](https://github.com/tnustrings/codetext/releases) and install with apt:
-
-```
-sudo apt install ./ct-<version>.deb
-```
-
-**on any os with go**
-
-install go from [here](https://go.dev/doc/install), then run
-
-```
-go install github.com/tnustrings/codetext/cmd/ct@latest
 ```
 
 ## dev

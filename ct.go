@@ -32,8 +32,8 @@ var roots map[string]*node
 // roottext holds the generated code for each root
 var roottext map[string]string
 
-// nat (node-at-ct-line) holds the node at a specific ct line (if there is one) was nodeatctline
-var nat map[int]*node
+// nodeatict (node-at-index-ct) holds the node at a specific ct line (if there is one) 
+var nodeatict map[int]*node // was nat
 
 // is this ctline opening a chunk? was ischunkopening
 var chop map[int]bool 
@@ -72,8 +72,8 @@ type node struct {
     // lines: keep the text as lines instead of a text block, cause splitting on '\n' on empty text gives length 1 (length 0 is wanted)
     lines []string
 
-    // ctline: for each text line, ctline holds its original line num in ct file, zero-indexed
-    ctline map[int]int // was ctlinenum
+    // ict: map from the index of a line in this node, starting from 0, to its index in the ct file.
+    ict map[int]int // was ctline
 
     // d: has this node been declared with a colon ':'. every node except ghost nodes needs to have been declared.
     d bool
@@ -103,12 +103,77 @@ func (n *node) ls() []string {
 func newnode(name string, parent *node) *node {
     n := node{name: name, parent: parent}
     n.childs = make(map[string]*node)
-    n.ctline = make(map[int]int)
+    n.ict = make(map[int]int)
     n.chat = make(map[int]*node)
     //n.lines = []string{}
     return &n    
 }
+
+// ct holds the ct conf
+struct ct {
+    conf Conf
+}
+
+// Conf holds the config
+struct Conf {
+    Func {}interface `yaml:"func"`
+}
+
+// loadconf loads the conf file. if it's not there, create it.
+// should we make the conf accessible or just package it with the program?
+func loadconf() *Conf {
+    // load the conf
+    path := "~/.ct/conf"
+    f, err := os.Open(path)
+    defer f.Close()
+    // if there was an error, assume the conf isn't there and write it
+    // todo check more specific for a file not found error?
+    if err {
+          f, err = os.Create(path)
+          fc.Handle(err)
+
+          conftext := `# ct configuration
+func: # function comments for programming languages
+  - # for python
+    ext:
+     - py
+    re: def ([\w_])\s*(: # the regex
+    mark: "#"
+    before: false
+  - # for go
+    ext:
+     - go
+    re: func ([\w_]).*(.*).*{ # the regex
+    mark: "//"
+    before: true
+  - # for javascript
+    ext:
+     - js
+     - ts
+    re: [\w_].*(.*){ # the regex. functions in classes don't have the function keyword.
+    mark: "//"
+    before: true
+    `
+          // write the conf text 
+          f.WriteString(conftext)
+          f.Close()
+    }
     
+    // now the conf should be there in any case, read it
+    f, err = os.Open(path)
+    fc.Handle(err)
+
+    // read the config text and parse it as yaml
+    b, _ := os.ReadFile(path)
+    // create an empty conf and unmarshal the conf into it
+    var conf Conf
+    if conf := yaml.Unmarshal(b, &conf); err != nil {
+        log.Fatal(err)
+    }
+
+    // return the config
+    return conf
+}
 
 // keys returns the keys of a map
 func keys[K cmp.Ordered, V any] (m map[K]V) []K {
@@ -247,11 +312,85 @@ func getname(line string) string {
     return name
 }
 
-/* assemble assembles a codechunk recursively, filling up its leading
- space to leadingspace. this way we can take chunks that are already
- (or partly) indented with respect to their parent in the editor, and
- chunks that are not.  */
-func assemble(n *node, leadingspace string, rootname string, genlinenum int) (string, int) {
+// assemble assembles a codechunk recursively, filling up its leading
+// space to leadingspace. this way we can take chunks that are already
+// (or partly) indented with respect to their parent in the editor, and
+// chunks that are not.  
+func assemble(n *node, leadingspace string, rootname string, proglang string, genlinenum int) (string, int) {
+
+     // insert comments from previous text nodes.  do this here because the programming language is now safe to be known after all the nodes have been put.  line referencing depends on whether lines were inserted, so do it here also.
+
+    // make a regexp to recognize (and extract) function names for the node's programming language.
+    funcre := re.MustCompile(conf["func"][proglang]["re"])
+    // get the comment mark for the nodes programming language
+    commentmark := conf["func"][proglang]["mark"]
+    // comment before or after function declaration
+    cmtbefore := conf["func"][proglang]["before"]
+
+    cmtoffset := 0 // the offset caused by comment inserted from prevtxt
+
+    prevlines := []
+
+    // map from the line number in the node to original line number in ct (get existing line count before new lines are added to node).
+    for i := 0; i < len(n.lines); i++ {
+
+         // go through the node's lines.
+         
+         // are there previous lines for line i? (is i the start of a new chunk of this node?)
+         if _, ok := n.prevlines[i - cmtoffset]; ok {         
+             prevlines = n.prevlines[i - cmtoffset]
+         }
+
+        // is the line a function declaration? put in prevtxt starting from a line that begins with the function name.
+        if funcre.MatchString(line) {
+        
+            // get the name of the function
+            funcname = funcre.Extract(line) // sth like this?
+            
+            // make a regexp for lines beginning with the function name
+            funcnamere := re.MustCompile("^" + funcname)
+
+            // if function declaration comes before the comment, insert the function declaration here and update the line-refs before the comment offset gets increased.
+            declroffset := 0
+            if !cmtbefore {
+                // remember that we inserted the function declaration            
+                decloffset = 1
+                // remember its index in the ctfile
+                n.ict[i] = n.ictatput + i 
+            }
+            
+            // skip the lines before a line starts with the function name.
+            for skip := 0; !funcnamere.MatchString(prevlines[skip]) && skip < len(prevlines); skip++ {
+                // skip
+            }
+
+            cmt = []string{}
+            
+            // collect the lines after the line that starts with the func name as comment
+            // len(prevlines) - skip is where the comment starts in prevtxt
+            lencmt := len(prevlines) - skip
+            j := 0
+            for ; j < lencmt; j++ {
+                // go backward from ctlinenum by the length of the comment and one more for the chunk declaration line. then add in which line of the comment we are            
+                n.ict[i + declroffset + j] = n.ictatput - lencmt - 1 + j
+                
+                // insert the comment line
+                n.lines = slices.Insert(n.lines, i + declroffset + j, commentmark + " " + prevlines[skip + j])
+            }
+            // increase i by j cause we've inserted the comment and can skip it in the loop
+            i += j
+
+            // if the function declaration comes after the comment, link it to ct after i is creased by j
+            if cmtbefore {
+                // using the i increased by j
+                n.ict[i] = n.ictatput + i
+            }
+        } else {
+            // remember the ct line number
+            n.ict[i] = n.ictatput + i
+        }
+    }        
+
 
     var lastnamedp *node
 
@@ -295,7 +434,7 @@ func assemble(n *node, leadingspace string, rootname string, genlinenum int) (st
             childleadingspace := re.FindString(line) + addspace 
             name := getname(line)
             if name == "." {   // assemble a ghost-child
-                outnew, genlinenum = assemble(n.ghostchilds[ighost], childleadingspace, rootname, genlinenum) 
+                outnew, genlinenum = assemble(n.ghostchilds[ighost], childleadingspace, rootname, proglang, genlinenum) 
                 out += outnew //  + "\n" # why add \n?
                 ighost += 1
             } else {             // assemble a named child
@@ -306,13 +445,13 @@ func assemble(n *node, leadingspace string, rootname string, genlinenum int) (st
                 } else {
                     child = n.childs[name]
 		}
-		outnew, genlinenum = assemble(child, childleadingspace, rootname, genlinenum)
+		outnew, genlinenum = assemble(child, childleadingspace, rootname, proglang, genlinenum)
                 out += outnew // + "\n" # why add \n?
 	    }
         } else { // normal line
             out += addspace + line + "\n"
             // map from the line number in the generated source to the original line number in the ct
-            ctlinenum[rootname][genlinenum] = n.ctline[i] 
+            ctlinenum[rootname][genlinenum] = n.ict[i] 
             genlinenum += 1 // we added one line to root, so count up
 	}
     }
@@ -322,35 +461,35 @@ func assemble(n *node, leadingspace string, rootname string, genlinenum int) (st
 
 
 // put puts text in tree under relative or absolute path
-func put(path string, text string, ctlinenum int) {
+func put(path string, text string, ctlinenum int, prevtxt string) {
     //debug("put(" + path + ")")
 
-    // create a ghostnode if called for
+    // create a ghostnode if called for.
     if (path == "." || path == "") && openghost != nil {
         currentnode = openghost
 
-        // we enter the ghost node the first time, this implicitly declares it
+        // we enter the ghost node the first time, this implicitly declares it.
         currentnode.d = true
         
         openghost = nil // necessary?
     } else {
-        // named node (new or append) or ghost node (append)
+        // named node (new or append) or ghost node (append).
 
-        // if the path would need a node to cling to but there isn't one
+        // if the path would need a node to cling to but there isn't one.
         if currentnode == nil && ! isfromroot(path) {
             fmt.Printf("error (line %d): there's no file to attach '%s' to, should it start with '//'?\n", ctlinenum, path)
             os.Exit(-1)
 	}
 
-        // a colon at the path end indicates that this is a declaration
+        // a colon at the path end indicates that this is a declaration.
 	r1 := regexp.MustCompile(":\\s*$")
         isdeclaration := r1.MatchString(path)
 
-        // remove the colon from path
+        // remove the colon from path.
 	r2 := regexp.MustCompile(":\\s*$")
         path := r2.ReplaceAllString(path, "")
 
-        // find the node, if not there, create it
+        // find the node, if not there, create it.
         node := cdmk(currentnode, path, ctlinenum)
 	//r := cdroot(node, 0)
 	//printtree(r)
@@ -368,16 +507,16 @@ func put(path string, text string, ctlinenum int) {
             os.Exit(-1)
 	}
 
-        // set that the node has been declared
+        // remember that the node has been declared.
         if isdeclaration {
             node.d = true
 	}
 
-        // all should be well, we can set the node as the current node
+        // all should be well, we can set the node as the current node.
         currentnode = node
     }
-    // append the text to node
-    concatcreatechilds(currentnode, text, ctlinenum)
+    // append the text to node.
+    concatcreatechilds(currentnode, text, ctlinenum, prevtxt)
 }
 
 /* cdmk walks the path from node and creates nodes if needed along the way.
@@ -385,7 +524,7 @@ func put(path string, text string, ctlinenum int) {
 // don't pass node as a pointer to not change it?
 func cdmk(n *node, path string, ctlinenum int) *node {
 
-    /* if our path is absolute (starting from a root), we can't just jump to the root, because when changing positions in the tree, we need to make sure that ghostnodes are exited properly.  cdone takes care of that, so we go backward node by node with cdone.  cdroot does this recursively. */
+    /* if our path is absolute (starting from a root), we can't just jump to the root, because when changing positions in the tree, we need to make sure that ghostnodes are exited properly.  cdone exits ghostnodes properly.  here we call cdroot, which in turn recursively calls cdone to step out of each node.  */
     re := regexp.MustCompile("^/")
     if re.MatchString(path) {
         //fmt.Printf("node: %s\n", n)
@@ -540,38 +679,42 @@ func createadd(name string, parent *node) *node {
     return node
 }
 
-// concatcreatechilds concatenates text to node and creates children from text (named or ghost)
-// this is the only place where text gets added to nodes
-func concatcreatechilds(n *node, text string, ctlinenum int) {
+// concatcreatechilds concatenates text to node and creates children from text (named or ghost).
+// this is the only place where text gets added to nodes.
+func concatcreatechilds(n *node, text string, ctlinenum int, prevtxt string) {
 
-    openghost = nil // why here? not so clear. but we need to reset it somewhere, that only the direct next code chunk can fill a ghost node
+    openghost = nil // why reset the openghost here? not so clear. but we need to reset it somewhere, that only the direct next code chunk can fill a ghost node.
 
-    // replace the last \n so that spli doesn't produce an empty line at the end
+    // replace the last \n so that split doesn't produce an empty line at the end.
     re := regexp.MustCompile("\n$")
     text = re.ReplaceAllString(text, "")
     newlines := strings.Split(text, "\n")
+    prevtxt = re.ReplaceAllString(prevtxt, "")
+    prevlines := strings.Split(prevtxt, "\n")
 
-    // map from the line number in node to original line number in ct (get existing line count before new lines are added to node)
+    N := len(n.lines)
 
-    N := len(n.lines) 
+    // remember the prevlines. function comments can be inserted from them at assembly later. for inserting function comments we need to know the programming language of the chunk, which is mostly inferred from the file extension of its root. the root is generally known for each chunk at put, cause the chunk has in some way to specify it, either explicitly in its path or implicitly because the root is somewhere before it in the text.  there is an edge case though when the root file doesn't have an extension, but the root chunk specifies the programming language via hashtag and comes after this chunk in the text (presumably quite rare).  in that case we'd need to wait after the root chunk is put to know the programming language of the current chunk. so for now, when inserting function comments, we pass the programming language down from the root node at assembly.
+    n.prevlines[N] = prevlines
+
+    // remember the ctlinenum
+    n.ictatput[N] = ctlinenum
+
+    // map from the ct line to the node.
     for i, _ := range newlines {
-        // go through the new lines
-        n.ctline[N+i] = ctlinenum + i
-        // map from the ct line to the node
-        nat[ctlinenum + i] = n
+      nodeatict[n.ictatput + i] = n
     }
-    
-    // also set nat for the opening and the closing line of a chunk 
-    // opening line
-    nat[ctlinenum - 1] = n
+    // also set node at index ct for the opening and the closing line of a chunk.
+    // opening line.
+    nodeatict[ctlinenum - 1] = n             
     // closing line
-    nat[ctlinenum + len(newlines)] = n
-        
+    nodeatict[ctlinenum + len(newlines) /* +1 ? */] = n
+
+    // append the lines
+    n.lines = append(n.lines, newlines...)
+
     //debug("N: " + str(N))
     //debug("node.ctlinenum: " + str(n.ctlinenum))
-
-    // put the new lines into node
-    n.lines = append(n.lines, newlines...)
 
     // generate the child nodes
     for i, line := range newlines {
@@ -647,6 +790,9 @@ func printtree(node *node) {
 // Ct runs codetext
 func Ct(text string) bool {
 
+    // load the config
+    conf := loadconf()
+
     // ctok := true  // todo listen to put?
 
     // reset variables
@@ -680,14 +826,17 @@ func Ct(text string) bool {
     // current chunk name/path
     var path string
     // start line of chunk in ct file
-    chunkstart := 0
+    ichunkstart := 0
+    // the text preceeding a chunk
+    txtprev = ""
+
+    dbltickre := regexp.MustCompile("^``[^`]*")
     
     for i, line := range lines {
         //fmt.Print(line)
 
         /* we can't decide for sure whether we're opening or closing a chunk by looking at the backticks alone, cause an unnamed chunk is opend the same way it is closed.  so in addition, check that inchunk is false. */
-	re := regexp.MustCompile("^``[^`]*")
-        if re.MatchString(line) && inchunk == false {
+        if dbltickre.MatchString(line) && inchunk == false {
 	    //debug("in chunk")
             // we're in a chunk
             inchunk = true
@@ -696,7 +845,7 @@ func Ct(text string) bool {
             // remember the start line of chunk in ct file
             // add one for the chunk text starts in the next line, not this
             // (treat the line numbers as 0-indexed)
-            chunkstart = i+1 
+            ichunkstart = i+1 
 
             // remember that this line is opening a chunk
             chop[i] = true
@@ -706,10 +855,11 @@ func Ct(text string) bool {
             inchunk = false
             // debug(f"calling put for: {path}")
             // debug("split chunk: " + str(chunk.split("\n")))
-            put(path, chunk, chunkstart)
+            put(path, chunk, ichunkstart, txtprev)
             // reset variables
             chunk = ""
 	    path = ""
+            txtprev = ""
 
             // remember that this line is closing a chunk
             chclo[i] = true
@@ -717,7 +867,10 @@ func Ct(text string) bool {
         } else if inchunk { // when we're in chunk remember line
             chunk += line
 	}
-        //else:
+        else { // remember text between chunks
+            txtprev += line
+        }
+
         //    debug(line, end="") # for debugging
     }
 
@@ -744,9 +897,14 @@ func Ct(text string) bool {
     // at the end, write all files (each file is a root) 
     for _, filename := range keys(roots) {
         // todo: add don't edit comment like before
+
+        // get the proglang. for now from the filename, maybe later also from hashtag, in case filename has no suffix
+        proglang := filepath.Ext(filename)
+        // remove the dot at the beginnig of the string Ext returns
+        proglang = strings.Replace(proglang, ".", "")
         
         // assemble the code
-        out, _ := assemble(roots[filename], "", filename, 0)
+        out, _ := assemble(roots[filename], "", filename, proglang, 0)
         // printtree(roots[filename])
         
         // save the generated text
@@ -760,7 +918,7 @@ func checkref(n *node) bool {
     ok := true
     // if the node is not root and hasn't been referenced, error
     if !n.isroot() && !n.r {
-        fmt.Printf("error: node %s hasn't been referenced from another node.\n", pwd(n)) // todo give line number? what about empty chunks where n.ctline[0] wouldn't work? could put pass the ctline of the chunk opening, and node save this in a property, in case no lines get added to the node?
+        fmt.Printf("error: node %s hasn't been referenced from another node.\n", pwd(n)) // todo give line number? what about empty chunks where n.ict[0] wouldn't work? could put pass the ctline of the chunk opening, and node save this in a property, in case no lines get added to the node?
 	ok = false
     }
     // check the children
