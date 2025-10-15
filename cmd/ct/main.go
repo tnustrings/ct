@@ -65,11 +65,11 @@ func main() {
     if *fl_l != "" { 
         a := strings.Split(*fl_l, ":")
 	genfile := a[0]
-	genline, _ := strconv.Atoi(a[1])
+	igen, _ := strconv.Atoi(a[1])
         ct.Ct(text, filepath.Base(ctfile))
-	ctline, err := ct.Ctline(genfile, genline-1)
+	ict, err := ct.Ict(genfile, igen-1)
 	fc.Handle(err)
-        fmt.Println(ctline+1)
+        fmt.Println(ict+1)
     } else if len(args) == 1 {
         if *fl_tex == true {
 	    var out string

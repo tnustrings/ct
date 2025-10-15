@@ -207,7 +207,7 @@ get the name of the generated file and line number from flag arg.
 ``/main/compile/go to:
         a := strings.Split(*fl_l, ":")
 	genfile := a[0]
-	genline, _ := strconv.Atoi(a[1])
+	igen, _ := strconv.Atoi(a[1])
 ``
 
 first run ct without writing files.
@@ -222,9 +222,9 @@ subtract and add 1 to go from one-indexed input number to zero-indexed
 and vice versa.
 
 ``
-	ctline, err := ct.Ctline(genfile, genline-1)
+	ict, err := ct.Ict(genfile, igen-1)
 	fc.Handle(err)
-        fmt.Println(ctline+1)
+        fmt.Println(ict+1)
 ``
 
 # checkoverwrite
