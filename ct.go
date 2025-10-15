@@ -327,7 +327,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
     }
 
      // insert comments from previous text nodes.  do this here because the programming language is now safe to be known after all the nodes have been put.  line referencing depends on whether lines were inserted, so do it here also.
-    insertcmt(n, proglang, ctfile, leadingspace, conf)
+    insertcmt(n, proglang, ctfile, conf)
 
     // if the rootname isn't in ictmap yet, put it there
     if _, ok := ictmap[rootname]; !ok {
@@ -371,7 +371,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
 }
 
 // insertcmt inserts function and don't-edit comments to node.
-func insertcmt(n *node, proglang string, ctfile string, leadingspace string, conf *Conf) {
+func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
     // make a regexp to recognize (and extract) function names for the node's programming language.
     funcre := regexp.MustCompile(getpl(conf, proglang).Fncre)
     
@@ -391,6 +391,9 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
 
     // the text lines preceeding the current chunk
     prevlines := []Line{}
+
+    // leading space regexp
+    leadspacere := regexp.MustCompile("^\\s*")
     
     // map from the line number in the node to original line number in ct (get existing line count before new lines are added to node).
     // this loop inserts comment lines and sets ict for all lines (including inserted comments), nothing else.
@@ -429,6 +432,11 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
             // get the name of the function
             matches := funcre.FindStringSubmatch(line.Txt) // sth like this?
 	    funcname := matches[funcre.SubexpIndex("name")] // see https://stackoverflow.com/a/66053163
+
+            // comments need to inherit the identation of their function declaration line, cause that isn't added later.
+            // this is done apart from alreadyspace in assemble, cause functions might not be declared on the first line of their chunk, which might be intended differently.
+            f := leadspacere.FindStringIndex(line.Txt)
+            funcspace := line.Txt[f[0]:f[1]]
             
             // make a regexp for lines beginning with the function name
             funcnamere := regexp.MustCompile("^" + funcname)
@@ -443,12 +451,14 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
             lencmt := len(prevlines) - skip
 	    
             // collect the lines after the line that starts with the func name as comment
+            //fmt.Printf("len leadingspace: %d\n", len(leadingspace))
+
 
             jins := 0 // j insert offset
             // insert opening comment mark, if given. count up jins.
             if cmtopen != "" {
 		// afterdecl adds one to the index if the comment should be inserted after the function declaration and not before it.            
-                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{leadingspace + commentindent + cmtopen, -1})
+                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{funcspace + commentindent + cmtopen, -1})
                 jins++
             }
 
@@ -456,7 +466,7 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
             j := 0
             for ; j < lencmt; j++ {
 		// make the comment line. if it's a multiline comment, cmtline is "".
-		cmt := leadingspace + commentindent + cmtline + prevlines[skip + j].Txt
+		cmt := funcspace + commentindent + cmtline + prevlines[skip + j].Txt
                 ict := prevlines[skip + j].Ict
                 
                 // insert the comment line
@@ -466,7 +476,7 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
             
             // insert the closing comment mark, if given. count up jins.
             if cmtclose != "" {
-                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{leadingspace + commentindent + cmtclose, -1})
+                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{funcspace + commentindent + cmtclose, -1})
                 jins++
             }
             
