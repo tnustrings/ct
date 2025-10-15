@@ -1,3 +1,11 @@
+# name
+name = "ct"
+
+# get the version from github tag
+# sort by version; get the last line; delete the v from the version tag cause python build seems to strip it as well
+version = $(shell git tag | sort -V | tail -1 | tr -d v)
+
+
 all: bin/ct 
 
 bin/ct: bin/ctmini cmd/ct/main.ct ct.go org.ct tex.ct conf/*
@@ -12,3 +20,13 @@ bin/ctmini: # build ctmini
 
 .PHONY deb:
 	cd deb; make
+
+publish-update: # if an asset was already uploaded, delete it before uploading again
+	make
+	# does the tag updating also update the source code at the resource?
+	# move the version tag to the most recent commit
+	git tag -f "v${version}"
+	# delete tag on remote
+	git push origin ":refs/tags/v${version}" 
+	# re-push the tag to the remote
+	git push --tags

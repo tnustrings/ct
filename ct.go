@@ -136,7 +136,9 @@ type Prog struct {
     Name string // language name
     Ext []string // file extensions
     Fncre string // regexp for function declaration
-    Cmtmark string // comment mark
+    Cmtline string // mark for line comment
+    Cmtopen string // opening mark for multiline comment
+    Cmtclose string // closing mark for multiline comment
     Cmtindent string // comment indent
     Fnccmt string // function comment
 }
@@ -374,7 +376,9 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
     funcre := regexp.MustCompile(getpl(conf, proglang).Fncre)
     
     // get the comment mark and indent for the programming language
-    commentmark := getpl(conf, proglang).Cmtmark
+    cmtline := getpl(conf, proglang).Cmtline
+    cmtopen := getpl(conf, proglang).Cmtopen
+    cmtclose := getpl(conf, proglang).Cmtclose
     commentindent := getpl(conf, proglang).Cmtindent
     
     // are comments inserted before or after function declaration?
@@ -395,10 +399,10 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
          // if this is a root chunk and the first line,
 	 // insert a 'don't edit' message.
 	 pl := getpl(conf, proglang)
-	 if n.isroot() && i == 0 && pl != nil && pl.Cmtmark != "" {
+	 if n.isroot() && i == 0 && pl != nil && pl.Cmtline != "" {
 	 
 	   // make the comment and insert it as first line
-	   comment := pl.Cmtmark + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
+	   comment := pl.Cmtline + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
 	   n.lines = slices.Insert(n.lines, 0, Line{comment, -1})
 
 	   // immediately increase i and roll on
@@ -438,23 +442,39 @@ func insertcmt(n *node, proglang string, ctfile string, leadingspace string, con
             // lencmt holds the length of the comment in prevlines
             lencmt := len(prevlines) - skip
 	    
-            // collect the lines after the line that starts with the func name as comment	    
+            // collect the lines after the line that starts with the func name as comment
+
+            jins := 0 // j insert offset
+            // insert opening comment mark, if given. count up jins.
+            if cmtopen != "" {
+		// afterdecl adds one to the index if the comment should be inserted after the function declaration and not before it.            
+                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{leadingspace + commentindent + cmtopen, -1})
+                jins++
+            }
+
+            // insert the comment lines
             j := 0
             for ; j < lencmt; j++ {
-	    
-		// make the comment line
-		cmt := leadingspace + commentindent + commentmark + " " + prevlines[skip + j].Txt
-		ict := prevlines[skip + j].Ict
-		
+		// make the comment line. if it's a multiline comment, cmtline is "".
+		cmt := leadingspace + commentindent + cmtline + prevlines[skip + j].Txt
+                ict := prevlines[skip + j].Ict
+                
                 // insert the comment line
-		// afterdecl adds one to the index if the comment should be inserted after the function declaration and not before it
-                n.lines = slices.Insert(n.lines, i + afterdecl + j, Line{cmt, ict})
+                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{cmt, ict})
+                jins++
             }
+            
+            // insert the closing comment mark, if given. count up jins.
+            if cmtclose != "" {
+                n.lines = slices.Insert(n.lines, i + afterdecl + jins, Line{leadingspace + commentindent + cmtclose, -1})
+                jins++
+            }
+            
 	    
-            // increase i by j cause we've inserted the comment and can skip it in the loop
-            i += j
+            // increase i by jins cause we've inserted the comment and can skip it in the loop
+            i += jins
 	    // remember how many lines of comments we added
-	    cmtoffset += j
+	    cmtoffset += jins
         } 
     }        
 }
