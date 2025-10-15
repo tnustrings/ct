@@ -41,7 +41,7 @@ sudo apt install ./ct-<version>.deb
 install go from [here](https://go.dev/doc/install), then run
 
 ```
-go install github.com/tnustrings/codetext/cmd/ct@latest
+go install github.com/tnustrings/ct/cmd/ct@latest
 ```
 
 ## longer example

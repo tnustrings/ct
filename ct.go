@@ -306,15 +306,14 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
         lastnamedp = lnp(n)
     }
     
-    /*
-    find out a first line how much this chunk is alredy indented
-    and determine how much needs to be filled up
-    */
+    // find out a first line how much this chunk is already indented
+    // and determine how much needs to be filled up
     var alreadyspace string
+
+    leadspacere := regexp.MustCompile("^\\s*")
     // leading space already there (in first line)
     if len(n.lines) > 0 {
-        re := regexp.MustCompile("^\\s*")
-	f := re.FindStringIndex(n.lines[0].Txt)
+	f := leadspacere.FindStringIndex(n.lines[0].Txt)
         alreadyspace = n.lines[0].Txt[f[0]:f[1]]
     } else {
         alreadyspace = "" // no line, so no leading space already there
@@ -326,7 +325,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
     }
 
      // insert comments from previous text nodes.  do this here because the programming language is now safe to be known after all the nodes have been put.  line referencing depends on whether lines were inserted, so do it here also.
-    insertcmt(n, proglang, ctfile, addspace, conf)
+    insertcmt(n, proglang, ctfile, leadingspace, conf)
 
     // if the rootname isn't in ictmap yet, put it there
     if _, ok := ictmap[rootname]; !ok {
@@ -341,8 +340,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
         if isname(line.Txt) {
 
             // remember leading whitespace
-	    re := regexp.MustCompile("^\\s*")
-            childleadingspace := re.FindString(line.Txt) + addspace 
+            childleadingspace := leadspacere.FindString(line.Txt) + addspace 
             name := getname(line.Txt)
             if name == "." {   // assemble a ghost-child
                 outnew, genlinenum = assemble(n.ghostchilds[ighost], childleadingspace, rootname, proglang, genlinenum, ctfile, conf) 
@@ -371,7 +369,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
 }
 
 // insertcmt inserts function and don't-edit comments to node.
-func insertcmt(n *node, proglang string, ctfile string, addspace string, conf *Conf) {
+func insertcmt(n *node, proglang string, ctfile string, leadingspace string, conf *Conf) {
     // make a regexp to recognize (and extract) function names for the node's programming language.
     funcre := regexp.MustCompile(getpl(conf, proglang).Fncre)
     
@@ -445,7 +443,7 @@ func insertcmt(n *node, proglang string, ctfile string, addspace string, conf *C
             for ; j < lencmt; j++ {
 	    
 		// make the comment line
-		cmt := addspace + commentindent + commentmark + " " + prevlines[skip + j].Txt
+		cmt := leadingspace + commentindent + commentmark + " " + prevlines[skip + j].Txt
 		ict := prevlines[skip + j].Ict
 		
                 // insert the comment line
