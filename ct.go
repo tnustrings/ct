@@ -138,6 +138,7 @@ type Prog struct {
     Fncre string // regexp for function declaration
     Cmtline string // mark for line comment
     Cmtopen string // opening mark for multiline comment
+    Cmtduring string // mark during multiline comment
     Cmtclose string // closing mark for multiline comment
     Cmtindent string // comment indent
     Fnccmt string // function comment
@@ -372,14 +373,18 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
 
 // insertcmt inserts function and don't-edit comments to node.
 func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
+
+     prog := getpl(conf, proglang)
+     
     // make a regexp to recognize (and extract) function names for the node's programming language.
-    funcre := regexp.MustCompile(getpl(conf, proglang).Fncre)
+    funcre := regexp.MustCompile(prog.Fncre)
     
     // get the comment mark and indent for the programming language
-    cmtline := getpl(conf, proglang).Cmtline
-    cmtopen := getpl(conf, proglang).Cmtopen
-    cmtclose := getpl(conf, proglang).Cmtclose
-    commentindent := getpl(conf, proglang).Cmtindent
+    cmtline := prog.Cmtline
+    cmtopen := prog.Cmtopen
+    cmtduring := prog.Cmtduring
+    cmtclose := prog.Cmtclose
+    commentindent := prog.Cmtindent
     
     // are comments inserted before or after function declaration?
     fnccmt := getpl(conf, proglang).Fnccmt
@@ -437,7 +442,7 @@ func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
             // this is done apart from alreadyspace in assemble, cause functions might not be declared on the first line of their chunk, which might be intended differently.
             f := leadspacere.FindStringIndex(line.Txt)
             funcspace := line.Txt[f[0]:f[1]]
-            
+
             // make a regexp for lines beginning with the function name
             funcnamere := regexp.MustCompile("^" + funcname)
             
@@ -465,8 +470,15 @@ func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
             // insert the comment lines
             j := 0
             for ; j < lencmt; j++ {
+	    	// figure out the comment mark during the comment. if it's a multiline comment, take cmtduring (if there). if it's not a multiline comment take cmtline.
+		cmtmark := ""
+		if cmtopen != "" { // multiline comment
+		   cmtmark = cmtduring
+		} else { // single lines of comment
+		   cmtmark = cmtline
+		}
 		// make the comment line. if it's a multiline comment, cmtline is "".
-		cmt := funcspace + commentindent + cmtline + prevlines[skip + j].Txt
+		cmt := funcspace + commentindent + cmtmark + " " + prevlines[skip + j].Txt
                 ict := prevlines[skip + j].Ict
                 
                 // insert the comment line

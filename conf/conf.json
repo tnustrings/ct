@@ -1,27 +1,62 @@
 {
     "proglang": [
-	    {
-		"name": "python",
-		"ext": ["py"],
-		"fncre": "def\\s+(?P<name>[\\w\\d_]+)\\s*\\(.*\\).*:",
-                "cmtopen": "\"\"\"",
-		"cmtclose": "\"\"\"",
-		"cmtindent": "    ",
-		"fnccmt": "after"
-	    },
-	    {
-		"name": "go",
-		"ext": ["go"],
-		"fncre": "func\\s+(?P<name>[\\w\\d_]+).*\\(.*\\).*{", 
-		"cmtline": "//",
-		"fnccmt": "before"
-	    },
-	    {
-		"name": "javascript",
-		"ext": ["js", "ts"],
-		"fncre": "(function)?\\s+(?P<name>[\\w\\d_]+).*\\(.*\\)\\s*{", 
-		"cmtline": "//",
-		"fnccmt": "before"
-	    }
+	{
+	    "name": "awk",
+	    "ext": ["awk"],
+	    "cmtline": "#"
+	},
+	{
+	    "name": "bash",
+	    "ext": ["sh", "bash"],
+	    "cmtline": "#"
+	},
+	{
+	    "name": "c",
+	    "ext": ["c"],
+	    "fncre": ".*\\s+(?P<name>[\\w\\d_]+)\\s*\\(.*\\)\\s*{",
+	    "cmtline": "//",
+	    "fnccmt": "before"
+	    
+	},
+	{
+	    "name": "go",
+	    "ext": ["go"],
+	    "fncre": "func\\s+(?P<name>[\\w\\d_]+).*\\(.*\\).*{", 
+	    "cmtline": "//",
+	    "fnccmt": "before"
+	},
+	{
+	    "name": "html",
+	    "ext": ["html"],
+	    "cmtopen": "<!--",
+	    "cmtclose": "-->"
+	},
+	{
+	    "name": "java",
+	    "ext": ["java"],
+	    "fncre": "(public|private|abstract|protected).*\\s+(?P<name>[\\w\\d_]+)\\s*\\(.*\\)\\s*{",
+	    "cmtopen": "/**",
+	    "cmtduring": "*",
+	    "cmtclose": "*/",
+	    "cmtline": "//",
+	    "fnccmt": "before"
+	},
+	{
+	    "name": "javascript",
+	    "ext": ["js", "ts"],
+	    "fncre": "(function)?\\s+(?P<name>[\\w\\d_]+).*\\(.*\\)\\s*{", 
+	    "cmtline": "//",
+	    "fnccmt": "before"
+	},
+	{
+	    "name": "python",
+	    "ext": ["py"],
+	    "fncre": "def\\s+(?P<name>[\\w\\d_]+)\\s*\\(.*\\).*:",
+            "cmtopen": "\"\"\"",
+	    "cmtclose": "\"\"\"",
+	    "cmtindent": "    ",
+	    "cmtline": "#",
+	    "fnccmt": "after"
+	}	
     ]
 }
