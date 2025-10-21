@@ -353,7 +353,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ig
                 outnew, igen = assemble(n.ghostchilds[ighost], childleadingspace, rootname, proglang, igen, ctfile, conf) 
                 out += outnew //  + "\n" # why add \n?
                 ighost += 1
-            } else {             // assemble a named child
+            } else {             // assemble a named child 
 	        var child *node
                 if isghost(n.name) {
                     // if we're at a ghost node, we get to the child via the last named ancestor
@@ -382,8 +382,17 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ig
 func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
 
      prog := getpl(conf, proglang)
+
+     // don't do anything if no programming language or no function re given
+     if prog == nil || prog.Fncre == "" {
+       return
+     }
+     // don't do anything if comment marks are not given.
+     if prog.Cmtline == "" || (prog.Cmtopen == "" && prog.Cmtclose == "") {
+       return
+     }
      
-    // make a regexp to recognize (and extract) function names for the node's programming language.
+     // make a regexp to recognize (and extract) function names for the node's programming language.
     funcre := regexp.MustCompile(prog.Fncre)
     
     // get the comment mark and indent for the programming language

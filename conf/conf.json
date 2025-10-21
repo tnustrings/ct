@@ -48,6 +48,11 @@
 	    "cmtline": "//",
 	    "fnccmt": "before"
 	},
+        {
+            "name": "powershell",
+            "ext": ["ps", "ps1"],
+            "cmtline": "#"
+        },
 	{
 	    "name": "python",
 	    "ext": ["py"],
