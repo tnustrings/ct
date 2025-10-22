@@ -27,6 +27,10 @@ var ctlines []string
 // for each generated file, map its line numbers to the original line numbers in ct file
 var ictmap map[string]map[int]int
 
+// map from ct lines to gen files and lines
+var filegenmap map[int]string
+var igenmap map[int]int
+
 // currentnode is the node we're currently at
 var currentnode *node
 
@@ -300,7 +304,7 @@ func getname(line string) string {
 // space to leadingspace. this way we can take chunks that are already
 // (or partly) indented with respect to their parent in the editor, and
 // chunks that are not.  
-func assemble(n *node, leadingspace string, rootname string, proglang string, genlinenum int, ctfile string, conf *Conf) (string, int) { // don't pass the conf here
+func assemble(n *node, leadingspace string, rootname string, proglang string, igen int, ctfile string, conf *Conf) (string, int) { // don't pass the conf here
 
     var lastnamedp *node
 
@@ -346,10 +350,10 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
             childleadingspace := leadspacere.FindString(line.Txt) + addspace 
             name := getname(line.Txt)
             if name == "." {   // assemble a ghost-child
-                outnew, genlinenum = assemble(n.ghostchilds[ighost], childleadingspace, rootname, proglang, genlinenum, ctfile, conf) 
+                outnew, igen = assemble(n.ghostchilds[ighost], childleadingspace, rootname, proglang, igen, ctfile, conf) 
                 out += outnew //  + "\n" # why add \n?
                 ighost += 1
-            } else {             // assemble a named child
+            } else {             // assemble a named child 
 	        var child *node
                 if isghost(n.name) {
                     // if we're at a ghost node, we get to the child via the last named ancestor
@@ -357,26 +361,38 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ge
                 } else {
                     child = n.childs[name]
 		}
-		outnew, genlinenum = assemble(child, childleadingspace, rootname, proglang, genlinenum, ctfile, conf)
+		outnew, igen = assemble(child, childleadingspace, rootname, proglang, igen, ctfile, conf)
                 out += outnew // + "\n" # why add \n?
 	    }
         } else { // normal line
             out += addspace + line.Txt + "\n"
-            // map from the line number in the generated source to the original line number in the ct
-            ictmap[rootname][genlinenum] = line.Ict 
-            genlinenum += 1 // we added one line to root, so count up
+            // map from the generated lines to the ct lines
+            ictmap[rootname][igen] = line.Ict
+            // map from the ct lines to the generated lines
+            igenmap[line.Ict] = igen
+            filegenmap[line.Ict] = rootname
+            igen += 1 // we added one line to root, so count up
 	}
     }
     // return the generated text and the new root line number (should be the same as the number of lines in out, so maybe don't return it?)
-    return out, genlinenum
+    return out, igen
 }
 
 // insertcmt inserts function and don't-edit comments to node.
 func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
 
      prog := getpl(conf, proglang)
+
+     // don't do anything if no programming language or no function re given
+     if prog == nil || prog.Fncre == "" {
+       return
+     }
+     // don't do anything if comment marks are not given.
+     if prog.Cmtline == "" || (prog.Cmtopen == "" && prog.Cmtclose == "") {
+       return
+     }
      
-    // make a regexp to recognize (and extract) function names for the node's programming language.
+     // make a regexp to recognize (and extract) function names for the node's programming language.
     funcre := regexp.MustCompile(prog.Fncre)
     
     // get the comment mark and indent for the programming language
@@ -864,6 +880,8 @@ func Ct(text string, ctfile string) error {
     currentnode = nil
     openghost = nil
     ictmap = make(map[string]map[int]int)
+    filegenmap = make(map[int]string)
+    igenmap = make(map[int]int)
     nodeatict = make(map[int]*node)
     ctlines = ctlines[:0]
     chop = make(map[int]bool)
@@ -1057,6 +1075,28 @@ func Ict(genfile string, igen int) (int, error) {
     }
     return ictmap[genfile][igen], nil
 }
+
+// Igen gets the index of the generated file at a given ct-index.
+func Igen(ict int) (int, error) {
+     if _, ok := igenmap[ict]; !ok {
+         return -1, errors.New(fmt.Sprintf("no generated file for line %d", ict))
+     }
+     return igenmap[ict], nil
+}
+
+// Filegen gets the name of the generated file at a given ct-index.
+func Filegen(ict int) (string, error) {
+     if _, ok := filegenmap[ict]; !ok {
+         return "", errors.New(fmt.Sprintf("no generated file for line %d", ict))
+     }
+     return filegenmap[ict], nil
+}
+
+// IGen holds a filename and index of generated file
+/*struct IGen {
+    I int
+    Name string
+}*/
 
 // Chop says whether a ct line is a chunk opening
 func Chop(line int) bool {
