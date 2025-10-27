@@ -426,7 +426,8 @@ func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
 	 if n.isroot() && i == 0 && pl != nil && pl.Cmtline != "" {
 	 
 	   // make the comment and insert it as first line
-	   comment := pl.Cmtline + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
+	   //comment := pl.Cmtline + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
+           comment := pl.Cmtline + " " + n.name + " is automatically generated from " + ctfile + ". please edit " + ctfile + "."
 	   n.lines = slices.Insert(n.lines, 0, Line{comment, -1})
 
 	   // immediately increase i and roll on
@@ -894,7 +895,7 @@ func Ct(text string, ctfile string) error {
     for i, _ := range lines {
         lines[i] += "\n"
     }
-    
+        
     // save the lines, for totex or so
     ctlines = lines
     

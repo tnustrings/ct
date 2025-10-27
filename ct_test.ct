@@ -1,0 +1,52 @@
+ct_test tests ct
+
+``//ct_test.go:
+package ct
+import (
+``import``
+)
+``TestCtGen``
+``
+
+TestCtGen tests generating ct code.
+
+``/TestCtGen:
+func TestCtGen(t *testing.T) {
+    ``.``
+}
+``
+
+make a little test text.
+
+``
+    b, _ := os.ReadFile("try/foo.ct")
+    text := string(b)
+    
+    //files, err := CtGen("try/foo.ct")
+
+    err := Ctwrite(text, "try", "foo.ct")
+    if err != nil {
+      t.Errorf("error: %v", err)
+    }
+``
+
+read the generated file and try to check its contents.
+
+``
+    b, _ = os.ReadFile("try/zoo.py")
+    text = string(b)
+    if text != `# zoo.py is automatically generated from foo.ct. please edit foo.ct.
+  welcome to the zoo
+  print("are there dolphins in the zoo?")
+` {
+        t.Errorf("generated text for try/zoo.py is different than expected.")
+    }
+``
+
+
+the imports.
+
+``/import:
+"testing"
+"os"
+``
