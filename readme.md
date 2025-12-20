@@ -6,7 +6,7 @@ ct lets you embed code in text. it's a bit like jupyter notebooks with
 the addition that code chunks are named and can be nested like
 directories.
 
-here's an example:
+Here's an example:
 
 ```
 begin a file named foo.py.
