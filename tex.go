@@ -54,7 +54,7 @@ func Totex(text string, ctfile string, mdtotex string) string {
             if !(chunu[path] == 0) {
                 backlabel = path + ":" + itoa(chunu[path]-1)
             }
-            if chunu[path] < node.nchunks - 1 {
+            if chunu[path] < len(node.chunks) - 1 {
                 fwdlabel = path + ":" + itoa(chunu[path]+1)
 	    }
             thislabel := path + ":" + itoa(chunu[path])
@@ -86,7 +86,7 @@ func Totex(text string, ctfile string, mdtotex string) string {
 	} else if inchunk == true && isname(line) {
             node := nodeatict[i]
             nodepath := pwd(node)
-            child := node.chat[i]
+            child := node.caict[i]
             childpath := pwd(child)
             if ! outsideverbatim {
                 out += "\\end{lstlisting}"

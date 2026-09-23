@@ -11,5 +11,5 @@ import (
 func main() {
     fname := os.Args[1]
     b, _ := os.ReadFile(fname)
-    ct.Ctwrite(string(b), "")
+    ct.Ctwrite(string(b), "", fname)
 }

@@ -3,18 +3,18 @@
 	{
 	    "name": "awk",
 	    "ext": ["awk"],
-	    "cmtline": "#"
+	    "cmtmark": "#"
 	},
 	{
 	    "name": "bash",
 	    "ext": ["sh", "bash"],
-	    "cmtline": "#"
+	    "cmtmark": "#"
 	},
 	{
 	    "name": "c",
 	    "ext": ["c"],
 	    "fncre": ".*\\s+(?P<name>[\\w\\d_]+)\\s*\\(.*\\)\\s*{",
-	    "cmtline": "//",
+	    "cmtmark": "//",
 	    "fnccmt": "before"
 	    
 	},
@@ -22,7 +22,7 @@
 	    "name": "go",
 	    "ext": ["go"],
 	    "fncre": "func\\s+(?P<name>[\\w\\d_]+).*\\(.*\\).*{", 
-	    "cmtline": "//",
+	    "cmtmark": "//",
 	    "fnccmt": "before"
 	},
 	{
@@ -38,14 +38,14 @@
 	    "cmtopen": "/**",
 	    "cmtduring": "*",
 	    "cmtclose": "*/",
-	    "cmtline": "//",
+	    "cmtmark": "//",
 	    "fnccmt": "before"
 	},
 	{
 	    "name": "javascript",
 	    "ext": ["js", "ts"],
 	    "fncre": "(function)?\\s+(?P<name>[\\w\\d_]+).*\\(.*\\)\\s*{", 
-	    "cmtline": "//",
+	    "cmtmark": "//",
 	    "fnccmt": "before"
 	},
 	{
@@ -55,8 +55,8 @@
             "cmtopen": "\"\"\"",
 	    "cmtclose": "\"\"\"",
 	    "cmtindent": "    ",
-	    "cmtline": "#",
+	    "cmtmark": "#",
 	    "fnccmt": "after"
-	}	
+	}
     ]
 }
