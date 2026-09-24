@@ -1,5 +1,7 @@
 ct_test tests ct
 
+see https://go.dev/doc/tutorial/add-a-test
+
 ``//ct_test.go:
 package ct
 import (
@@ -16,21 +18,23 @@ func TestCtGen(t *testing.T) {
 }
 ``
 
-make a little test text.
+for now take foo.ct to generate code from ct.
 
 ``
     b, _ := os.ReadFile("try/foo.ct")
     text := string(b)
     
-    //files, err := CtGen("try/foo.ct")
-
     err := Ctwrite(text, "try", "foo.ct")
     if err != nil {
       t.Errorf("error: %v", err)
     }
 ``
 
-read the generated file and try to check its contents.
+maybe in the future call like this:
+
+files, err := CtGen("try/foo.ct")
+
+read one of the generated files and check its contents.
 
 ``
     b, _ = os.ReadFile("try/zoo.py")

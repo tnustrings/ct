@@ -7,8 +7,6 @@ func TestCtGen(t *testing.T) {
     b, _ := os.ReadFile("try/foo.ct")
     text := string(b)
     
-    //files, err := CtGen("try/foo.ct")
-
     err := Ctwrite(text, "try", "foo.ct")
     if err != nil {
       t.Errorf("error: %v", err)

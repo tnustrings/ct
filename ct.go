@@ -176,9 +176,9 @@ func keys[K cmp.Ordered, V any] (m map[K]V) []K {
 /* cdone walks one step from node. if it goes back from a ghost, put
 the named childs of a ghost to the ghost's last named parent (lnp). a
 ghost node isn't accessible after exiting it, but its named childs
-should be. so the named childs end up with two parents, the
+should be. so the named childs of a ghost node end up with two parents, the
 ghostparent that determines at which line they are assembled and the
-lnp via which they can be accessed in paths.*/
+lnp via which they can be accessed in declaration paths. */
 
 func (n *node) cdone(step string) *node {
     //fmt.Printf("cdone %s\n", step)
@@ -378,7 +378,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ig
     return out, igen
 }
 
-// insertcmt inserts function and don't-edit comments to node.
+// insertcmt inserts function comments and the leading don't-edit comment to node.
 func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
 
      prog := getpl(conf, proglang)
@@ -456,7 +456,7 @@ func insertcmt(n *node, proglang string, ctfile string, conf *Conf) {
 	    funcname := matches[funcre.SubexpIndex("name")] // see https://stackoverflow.com/a/66053163
 
             // comments need to inherit the identation of their function declaration line, cause that isn't added later.
-            // this is done apart from alreadyspace in assemble, cause functions might not be declared on the first line of their chunk, which might be intended differently.
+            // this is done apart from alreadyspace in assemble, cause functions might not be declared on the first line of their chunk, which might be indented differently.
             f := leadspacere.FindStringIndex(line.Txt)
             funcspace := line.Txt[f[0]:f[1]]
 
