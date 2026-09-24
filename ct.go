@@ -413,6 +413,16 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
 	outnew = addclosing(chunk, leadingspace, prog)
 	out = append(out, outnew...)
     }
+    
+    // add a node close comment to be able to reconstruct the ct file        
+    if len(n.chunks) > 0 {
+        nctfirst := n.chunks[0].Nct
+        lastchunk := n.chunks[len(n.chunks)-1]
+
+        outnew := addnodeclose(nctfist, lastchunk, leadingspace, prog)
+        out = append(out, outnew...)
+    }
+    
     //debug("out:")
     //debug(out)
     return out
@@ -433,7 +443,7 @@ func addopening(chunk *Chunk, leadingspace string, prog *Prog) []Line {
     return out
 }
 
-// addclosing adds text lines after a chunk seperated by ``= and a closing comment as to be able to reconstruct the ct file
+// addclosing adds the txtb of a chunk to the generated code as to be able to reconstruct the ct file
 func addclosing(chunk *Chunk, leadingspace string, prog *Prog) []Line {
     out := []Line{}
     for _, line := range(chunk.Txtb) {
@@ -441,8 +451,14 @@ func addclosing(chunk *Chunk, leadingspace string, prog *Prog) []Line {
         txt := leadingspace + prog.Cmtmark + " " + line.Txt
 	out = append(out, Line{Txt:txt, Ict:line.Ict})
     }
+    return out
+}
+
+// addnodeclose adds a comment to signify that the node that started with chunk nct is closed with lastchunk.
+func addnodeclose(nct int, lastchunk *Chunk, leadingspace string, prog *Prog) [] Line {
+    out := []Line{}
     // add a comment signifying chunk closure
-    txt := leadingspace + prog.Cmtmark + "``" + itoa(chunk.Nct)
+    txt := leadingspace + prog.Cmtmark + "``" + itoa(nct)
     out = append(out, Line{Txt:txt, Ict: chunk.Tag.Ict + len(chunk.Code)+1})
     return out
 }
