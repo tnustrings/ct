@@ -1,5 +1,7 @@
 // tc.go does reverse-codetext, builing a ct file from source files.
 
+package ct
+
 // variables
 
 // stack holds the nct (number in ct file) of the current chunk
@@ -17,7 +19,7 @@ var lastopened int
 func Tc(genfiles []string) {
 
     // reset variables
-    stack = []int
+    stack = []int{}
     chunks = make(map[int]*Chunk)
     lastopened = -1
 }

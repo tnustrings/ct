@@ -321,7 +321,7 @@ func trimlines(lines []Line) []Line {
     for j = len(lines)-1; j >= 0; j-- {
         if !empty.MatchString(lines[j].Txt) { break }
     }
-    if i <= j { return lines[i:j] }
+    if i <= j { return lines[i:j+1] }
     return []Line{}
     return out
 }
@@ -414,12 +414,12 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
 	out = append(out, outnew...)
     }
     
-    // add a node close comment to be able to reconstruct the ct file        
+    // add a close comment for the node to be able to reconstruct the ct file        
     if len(n.chunks) > 0 {
         nctfirst := n.chunks[0].Nct
         lastchunk := n.chunks[len(n.chunks)-1]
 
-        outnew := addnodeclose(nctfist, lastchunk, leadingspace, prog)
+        outnew := addnodeclose(nctfirst, lastchunk, leadingspace, prog)
         out = append(out, outnew...)
     }
     
@@ -459,7 +459,7 @@ func addnodeclose(nct int, lastchunk *Chunk, leadingspace string, prog *Prog) []
     out := []Line{}
     // add a comment signifying chunk closure
     txt := leadingspace + prog.Cmtmark + "``" + itoa(nct)
-    out = append(out, Line{Txt:txt, Ict: chunk.Tag.Ict + len(chunk.Code)+1})
+    out = append(out, Line{Txt:txt, Ict: lastchunk.Tag.Ict + len(lastchunk.Code)+1})
     return out
 }
 
@@ -598,8 +598,8 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
 func put(chunk *Chunk) {
 
     // remove leading and trailing blank lines of between-text
-    //chunk.Txta = trimlines(chunk.Txta)
-    //chunk.Txtb = trimlines(chunk.Txtb)
+    chunk.Txta = trimlines(chunk.Txta)
+    chunk.Txtb = trimlines(chunk.Txtb)
 
     path := getname(chunk.Tag.Txt)
     //debug("put(" + path + ")")
@@ -964,15 +964,24 @@ func Ct(text string, ctfile string) error {
     n := 0
     // the current chunk    
     var currentchunk *Chunk
-    // dbltickre says that a line could be chunk-opening or chunk-closing, and excludes text separating ``= lines.
-    dbltickre := regexp.MustCompile("^``[^=`]*")
+    // dbltickre says that a line could be chunk-opening or chunk-closing. it also matches text separating ``= lines, they need to be fished out seperately.
+    dbltickre := regexp.MustCompile("^``[^`]*$")
     
     for i, txtline := range lines {
         //print("line: " + txtline)
         line := Line{Txt: txtline, Ict: i}
 
         // we need to keep track whether we're in code or not cause two ticks `` could both close and open (an unnamed) chunk.
-        if dbltickre.MatchString(line.Txt) && incode == false { // we're are at the beginning of code
+
+        // fish out text seperating lines.
+        if istxtsep(line.Txt) { // we're at a text sep line ``=
+            //fmt.Println("is txt sep:" + line.Txt)
+	    // append whatever was collected as text before ``= to the current chunk's txtb
+	    for _, l := range txt { currentchunk.Txtb = append(currentchunk.Txtb, l) }
+	    // clear text collection
+	    txt = []Line{}
+        } else if dbltickre.MatchString(line.Txt) && incode == false { // we're are at the beginning of code
+            //fmt.Println("at beginning of code:"+line.Txt)
 	    incode = true
 	    // if there was a preceeding chunk, put it.
 	    if currentchunk != nil {
@@ -988,16 +997,14 @@ func Ct(text string, ctfile string) error {
 	    // remember the tag
 	    currentchunk.Tag = line
         } else if isdblticks(line.Txt) { // we're at the end of code
+            //fmt.Println("at end of code:" + line.Txt)
             incode = false
-	} else if istxtsep(line.Txt) { // we're at a text sep line ``=
-	    // append whatever was collected as text before ``= to the current chunk's txtb
-	    for _, l := range txt { currentchunk.Txtb = append(currentchunk.Txtb, l) }
-	    // clear text collection
-	    txt = []Line{}
-        } else if incode { // we're in code
+	} else if incode { // we're in code
+            //fmt.Println("append to code:" + line.Txt)
 	    // append to the code
             currentchunk.Code = append(currentchunk.Code, line)
 	} else { // we're in text between code
+            //fmt.Println("text between:" + line.Txt)
             // collect the text
 	    txt = append(txt, line)
         }
