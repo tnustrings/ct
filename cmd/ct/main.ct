@@ -19,6 +19,9 @@ import (
 )
 ``main``
 ``checkoverwrite``
+``shouldtc``
+``filesfromgen``
+``filesfromct``
 ``
 
 # main function
@@ -58,18 +61,18 @@ get the positional args.
     args := flag.Args()
 ``
 
-take the ctfile as positional arg.
+take the file as positional arg.
 
 be able to handle more than one ct file?
 
 ``
-    var ctfile string
+    var file string
     switch len(args) {
     case 0:
          fmt.Println("please specify a .ct file: ct myfile.ct");
          os.Exit(0);
     case 1:
-    	ctfile = args[0]
+    	file = args[0]
     }
 ``
 
@@ -77,7 +80,7 @@ if no ct file was given and the -tex flag is set generate the latex
 template and header.
 
 ``/main/tex tmpl:
-    if ctfile == "" {
+    if file == "" {
         if *fl_tex {
 	    ``.``
 	}
@@ -126,7 +129,7 @@ generate template and header, and write them.
 if a codetext file was given, read it.
 
 ``/main/read:
-    b, _ := os.ReadFile(ctfile)
+    b, _ := os.ReadFile(file)
     text := string(b)
 ``
 
@@ -150,7 +153,7 @@ now comes the part of main involving assembly of the given ct file.
         if *fl_tex == true {
 	    ``tex``
         } else {
-	    ``ctwrite``
+	    ``ct or tc``
 	}
     } 
 ``
@@ -161,13 +164,13 @@ generate a tex file from ct.
 
 ``/main/compile/tex:
 	    var out string
-	    out = ct.Totex(text, ctfile, *fl_mdtotex)
+	    out = ct.Totex(text, file, *fl_mdtotex)
 ``
 
 if no out name for tex given, take it from the ct file.
 
 ``
-            a := strings.Split(ctfile, ".")
+            a := strings.Split(file, ".")
 	    var outname string
             if *fl_o == "" {
                 outname = a[0] + ".tex"
@@ -187,16 +190,51 @@ write and say which file was written.
 	    fmt.Println(outname)
 ``
 
-### ct write
+### ct or tc
 
-run ct and write file(s) into the same dir as mother ct-file.
+the user can pass a ct file or a generated file.  based on which of
+the files is newer, run ct or tc (reverse ct).
 
-``/main/compile/ctwrite:
-            err := ct.Ctwrite(text, fc.Dir(ctfile), filepath.Base(ctfile))
-	    if err != nil {
-	      log.Fatal(err)
-	    }
+find out all generated files.
+
+if the user passed a generated file, read the ct file and eventual other
+generated files from its header.
+
+``/main/compile/ct or tc:
+            // load the config
+            conf, err := loadconf()
+            if err != nil { return err }
+
+            if filepath.Ext(file) != ".ct" {
+                ctfile, genfiles, err = filesfromgen(file, conf)
+                if err != nil { log.Fatal(err) }
+            }
 ``
+
+if the user passed a ct file, compile it and get the generated files
+from there.
+
+``
+            else {
+                ctfile = file
+                genfiles, err = filesfromct(ctfile)
+                if err != nil { log.Fatal(err) }
+            }
+``
+
+run ct or tc based on the dates of the files.
+
+``
+            if shouldtc(ctfile, genfiles) {
+                err := ct.Tcwrite(genfiles, ctfile)
+                if err != nil { log.Fatal(err) }
+            } else {
+                // TODO uncomment.  for now don't overwrite ct file, until it's safe.bm
+                // err := ct.Ctwrite(ctfile) 
+                if err != nil { log.Fatal(err) }
+            }
+``
+            
 
 ### go to line
 
@@ -213,7 +251,7 @@ get the name of the generated file and line number from flag arg.
 first run ct without writing files.
 
 ``
-        ct.Ct(text, filepath.Base(ctfile))
+        ct.Ct(text, filepath.Base(file))
 ``
 
 then print the original line number.
@@ -286,4 +324,129 @@ write and print which file was written.
 ``
     f.WriteString(text)
     fmt.Println(path)
+``
+
+
+shouldtc says whether ct or tc should be run: if one of the generated
+files is newer than ct file, run tc, else run ct.
+
+``/shouldtc:
+func shouldtc(ctfile string, genfiles []string) bool, err {
+    ctinfo, err := fs.FileInfo(ctfile)
+    if err != nil { return (false, err) }
+
+    for _, genfile := range genfiles {
+        geninfo, err := fs.FileInfo(genfile)
+        if err != nil { return (false, err) }
+        if geninfo.ModTime.After(ctinfo.ModTime) {
+            // one generated file was modified after ct file was modified, run tc
+            return true
+        }
+    }
+    // all generated files were modified before ct file was modified, run ct
+    return false
+}
+``
+
+filesfromgen returns the paths of associated files (ct file and
+generated files) from the header of a generated file. a header line would be:
+#ct myprog.ct gen1.py gen2.py genx.sh
+often only one file is generated from a ct file.
+
+``/filesfromgen:
+func filesfromgen(genfile string) string, []string, error {
+    ``_``
+}
+``
+
+get the file extension, dir, and load the programming language info.
+
+``_:
+    ext := filepath.Ext(genfile)
+    dir := fc.Dir(genfile)    
+    prog := getpl(conf, ext)
+``
+
+make an regexp to fish for the header line.
+
+``
+    re := regexp.MustCompile("^" + prog.Cmtmark + "ct (.*)$")
+``
+
+open the file and make a scanner.
+
+``
+    file, err := os.Open(genfile)
+    if err != nil { return err }
+    defer file.Close()
+    scanner = bufio.NewScanner(file)
+``
+
+read the lines, see whether a line matches.
+
+``
+    for scanner.Scan() {
+        line := scanner.Text()
+        if re.MatchString(line) {
+            ``.``
+        }
+    }
+``
+
+on match, extract the file names.
+
+``
+            match, _ := re.FindStringSubmatch(line)
+            if len(match) < 1 { log.Fatal(genfile + ": no filenames in line " + line) }
+            filenames = strings.split(match[1], " ") // TODO quote-sensitive split?
+``
+
+return complete paths.
+
+``
+            paths := []string{}
+            for _, path := range filenames {
+                if dir != "" { path = dir + "/" + path } // TODO okay so?
+                paths = append(paths, path)
+            }
+            return paths[0], paths[1:], nil
+``
+
+if no ct line found, error.
+
+``/filesfromgen/_
+    log.Fatal("no ct-line in " + genfile)
+``
+
+filesfromct returns the paths of the files generated from a ct file.
+
+``/filesfromct:
+func filesfromct(ctfile) []string, err {
+    ``_``
+}
+``
+
+run codetext.
+
+``
+    err := Ct(text, ctfile)
+    if err != nil { return nil, err }
+``
+
+get the directory.
+
+``
+    dir := fc.Dir(path)
+``
+
+collect the generated filenames, return the complete paths.
+
+``
+    out := []string{}
+    for path, _ := range roots { // TODO run this on a ct instance? or let Ct() return the roots?
+        if dir != "" { path = dir + "/" + path } // TODO okay so?
+
+        out = append(out, path)
+    }
+    return out, nil
 ``

@@ -66,6 +66,8 @@ type Chunk struct {
     Txtb []Line
     // Nct says that this is the nth chunk in the ct file
     Nct int
+    // Fin (first-in-node) holds the nct of the chunk that is first in this chunk's node.  used by Tc() to keep track of nodes on chunk-based stack.
+    Fin int
 }
 
 // a node holds multiple code chunks sharing the same path, and references the child nodes the code in the chunks spawns.
@@ -246,9 +248,9 @@ func exitghost(ghost *node) {
     }	
 }
 
-// isname returns true if line is the referencing name line of a code chunk
-func isname(line string) bool {
-    // the name needs to contain at least one non-tick to distinguish it from three-tick ``` markdown code-block openings
+// isreference says whether this line is referencing a code chunk.
+func isreference(line string) bool {
+    // the reference needs to contain at least one non-tick to distinguish it from three-tick ``` markdown code-block openings
     re := regexp.MustCompile(".*``[^`]+``")
     return re.MatchString(line)
 }
@@ -280,8 +282,8 @@ func isfromroot(name string) bool {
      return re.MatchString(name)
 }
 
-// getname gets the chunkname from a chunk-opening or in-chunk reference
-func getname(line string) string {
+// stripdblticks strips the double ticks `` (and programming language hashtag) from a chunk-opening or in-chunk reference
+func stripdblticks(line string) string {
     // remove the leading ticks (openings and references)
     r1 := regexp.MustCompile("^[^`]*``")
     // replace only the first occurence
@@ -292,7 +294,7 @@ func getname(line string) string {
     r2 := regexp.MustCompile("``.*")
     name = r2.ReplaceAllString(name, "")
         
-    // remove the newline (openings only)
+    // remove the newline (openings only) // TODO needed?
     r3 := regexp.MustCompile("\n$")
     name = r3.ReplaceAllString(name, "")
 
@@ -302,10 +304,31 @@ func getname(line string) string {
 
     // don't remove the declaration colon, we need it in put()
     
-    // debug(f"getname({line}): '{name}'")
+    // debug(f"stripdblticks({line}): '{name}'")
 
     return name
 }
+
+// getleadingspace returns the leading space in a line.
+func getleadingspace(line string) string {
+    leadspacere := regexp.MustCompile("^\\s*")
+    return leadspacere.FindString(line)
+}
+
+// isdeclaration returns whether a path (with or without leading ``) is followed by a colon : denoting chunk declaration.
+func isdeclaration(path string) bool {
+    // a colon at the path end indicates that this is a declaration.
+    re := regexp.MustCompile(":\\s*$")
+    return re.MatchString(path)
+}
+
+// stripdeclcolon removes the declaration colon from a path.
+func stripdeclcolon(path string) string {
+    // remove the declaration colon from path.
+    re := regexp.MustCompile(":\\s*$")
+    return re.ReplaceAllString(path, "")        
+}
+
 
 // trimlines removes empty lines at beginning and end of slice.
 func trimlines(lines []Line) []Line {
@@ -382,11 +405,11 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
         // assemble the code
         for _, line := range chunk.Code {
 	
-	    if isname(line.Txt) {
+	    if isreference(line.Txt) {
 
 		// remember leading whitespace
-		childleadingspace := leadspacere.FindString(line.Txt) + addspace 
-		name := getname(line.Txt)
+		childleadingspace := getleadingspace(line.Txt) + addspace 
+		name := stripdblticks(line.Txt)
 		if name == "." {   // assemble a ghost-child
 		    outnew := assemble(n.ghostchilds[ighost], childleadingspace, rootname, proglang, ctfile, conf)
 		    out = append(out, outnew...)
@@ -477,9 +500,6 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
 
     // the text lines preceeding the current chunk
     var myprevlines []Line
-
-    // leading space regexp
-    leadspacere := regexp.MustCompile("^\\s*")
 
     // the output lines
     out := []Line{} 
@@ -601,7 +621,7 @@ func put(chunk *Chunk) {
     chunk.Txta = trimlines(chunk.Txta)
     chunk.Txtb = trimlines(chunk.Txtb)
 
-    path := getname(chunk.Tag.Txt)
+    path := stripdblticks(chunk.Tag.Txt)
     //debug("put(" + path + ")")
 
     // create a ghostnode if called for.
@@ -621,34 +641,28 @@ func put(chunk *Chunk) {
             os.Exit(-1)
 	}
 
-        // a colon at the path end indicates that this is a declaration.
-	r1 := regexp.MustCompile(":\\s*$")
-        isdeclaration := r1.MatchString(path)
-
-        // remove the colon from path.
-	r2 := regexp.MustCompile(":\\s*$")
-        path := r2.ReplaceAllString(path, "")
+        pathpure := stripdeclcolon(path)
 
         // find the node, if not there, create it.
-        node := cdmk(currentnode, path, chunk.Tag.Ict)
+        node := cdmk(currentnode, pathpure, chunk.Tag.Ict)
 	//r := cdroot(node, 0)
 	//printtree(r)
 
 
         /* we'd like to check that a node needs to have been declared with : before text can be appended to it. for that, it doesn't help to check if a node is there, cause it might have already been created as a parent of a node. so we introduce the node.d property. */
 
-        if isdeclaration && node.d {
-            fmt.Printf("error (line %d): chunk %s has already been declared, maybe drop the colon ':'\n", chunk.Tag.Ict, path)
+        if isdeclaration(path) && node.d {
+            fmt.Printf("error (line %d): chunk %s has already been declared, maybe drop the colon ':'\n", chunk.Tag.Ict, pathpure)
             os.Exit(-1)
-        } else if !isdeclaration && !node.d {
-            fmt.Printf("error (line %d): chunk %s needs to be declared with ':' before text is appended to it\n", chunk.Tag.Ict, path)
+        } else if !isdeclaration(path) && !node.d {
+            fmt.Printf("error (line %d): chunk %s needs to be declared with ':' before text is appended to it\n", chunk.Tag.Ict, pathpure)
 	    	   
 	    //fmt.Printf("node.d: %s, node.name: %s\n", node.d, node.name)
             os.Exit(-1)
 	}
 
         // remember that the node has been declared.
-        if isdeclaration {
+        if isdeclaration(path) {
             node.d = true
 	}
 
@@ -845,7 +859,7 @@ func addcreatechilds(n *node, chunk *Chunk) {
 
     // generate the child nodes
     for i, line := range chunk.Code {
-        if !isname(line.Txt) {
+        if !isreference(line.Txt) {
             continue
 	}
 	
@@ -855,7 +869,7 @@ func addcreatechilds(n *node, chunk *Chunk) {
         // the newly created child
         var child *node
 
-        name := getname(line.Txt)
+        name := stripdblticks(line.Txt)
         if name == "." { // ghost child
             // if we're not at the first ghost chunk here
             if openghost != nil {
@@ -1104,11 +1118,20 @@ func checkdecl(n *node) bool {
 }
 
 // Ctwrite runs codetext and writes the assembled files        
-func Ctwrite(text string, dir string, ctfile string) error {
+func Ctwrite(ctfile string) error {
+
+    // read the file
+    b, _ := os.ReadFile(path)
+    text := string(b)
+
+    // get directory and filename
+    dir := fc.Dir(path)
+    filename := filepath.Base(path)
+
     //fmt.Printf("hello ctwrite\n")
     
     // run codetext
-    err := Ct(text, ctfile)
+    err := Ct(text, filename)
     if err != nil { return err }
 
     // write the assembled text for each root
@@ -1181,7 +1204,7 @@ func debug(a any) {
     fmt.Println(a)
 }
 
-// getpl gets the entry for a programming language from conf
+// getpl gets the entry for a programming language from conf. pl can be with leading dot or without.
 func getpl(conf *Conf, pl string) *Prog {
     for _, prog := range conf.Proglang {
         // does the name match?
@@ -1190,7 +1213,7 @@ func getpl(conf *Conf, pl string) *Prog {
 	}
 	// do any of the extensions match?
 	for _, ext := range prog.Ext {
-	    if ext == pl {
+	    if ext == pl || or "." + ext == pl {
 	        return &prog
             }
 	}
