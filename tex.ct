@@ -88,7 +88,7 @@ we go over the ctlines.
     for i, line := range ctlines {
         if Chop(i) {
             ``opening``
-	} else if inchunk == true && isname(line) {
+	} else if inchunk == true && isreference(line) {
 	    ``child ref``
 	} else if Chclo(i) {
 	    ``close``

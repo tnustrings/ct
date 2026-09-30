@@ -10,6 +10,7 @@ import (
 // main kicks off tangling or tex generating
 func main() {
     fname := os.Args[1]
-    b, _ := os.ReadFile(fname)
-    ct.Ctwrite(string(b), "", fname)
+    //b, _ := os.ReadFile(fname)
+    //ct.Ctwrite(string(b), "", fname)
+    ct.Ctwrite(fname) // TODO pass path?
 }

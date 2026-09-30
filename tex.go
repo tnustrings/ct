@@ -83,7 +83,7 @@ func Totex(text string, ctfile string, mdtotex string) string {
             out += "\n"
             out += "\\begin{lstlisting}\n"
 	    continue
-	} else if inchunk == true && isname(line) {
+	} else if inchunk == true && isreference(line) {
             node := nodeatict[i]
             nodepath := pwd(node)
             child := node.caict[i]

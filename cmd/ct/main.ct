@@ -328,13 +328,24 @@ write and print which file was written.
 
 
 shouldtc says whether ct or tc should be run: if one of the generated
-files is newer than ct file, run tc, else run ct.
+files is newer than the ct file, run tc, else run ct.
 
 ``/shouldtc:
 func shouldtc(ctfile string, genfiles []string) bool, err {
+    ``_``
+}
+``
+
+get the file info for the ct file.
+
+``_:
     ctinfo, err := fs.FileInfo(ctfile)
     if err != nil { return (false, err) }
+``
 
+go over the gen files and see whether one is newer than the ct file.
+
+``
     for _, genfile := range genfiles {
         geninfo, err := fs.FileInfo(genfile)
         if err != nil { return (false, err) }
@@ -343,15 +354,17 @@ func shouldtc(ctfile string, genfiles []string) bool, err {
             return true
         }
     }
-    // all generated files were modified before ct file was modified, run ct
+``
+
+if all generated files were modified before the ct file was modified, run ct.
+
+``
     return false
-}
 ``
 
 filesfromgen returns the paths of associated files (ct file and
 generated files) from the header of a generated file. a header line would be:
-#ct myprog.ct gen1.py gen2.py genx.sh
-often only one file is generated from a ct file.
+#`` myprog.ct gen1.py gen2.py 
 
 ``/filesfromgen:
 func filesfromgen(genfile string) string, []string, error {
@@ -367,12 +380,6 @@ get the file extension, dir, and load the programming language info.
     prog := getpl(conf, ext)
 ``
 
-make an regexp to fish for the header line.
-
-``
-    re := regexp.MustCompile("^" + prog.Cmtmark + "ct (.*)$")
-``
-
 open the file and make a scanner.
 
 ``
@@ -382,26 +389,29 @@ open the file and make a scanner.
     scanner = bufio.NewScanner(file)
 ``
 
-read the lines, see whether a line matches.
+read the lines, see whether a line matches the end of a ct header.
 
 ``
+    i := 0
     for scanner.Scan() {
         line := scanner.Text()
-        if re.MatchString(line) {
+        if isctheaderend(line, prog) {
             ``.``
         }
+        i++
     }
 ``
 
-on match, extract the file names.
+extract the file names from the end-of-header line.
 
 ``
-            match, _ := re.FindStringSubmatch(line)
-            if len(match) < 1 { log.Fatal(genfile + ": no filenames in line " + line) }
-            filenames = strings.split(match[1], " ") // TODO quote-sensitive split?
+            filenames, err = ctheaderfiles(line, prog)
+            if len(filenames) == 0 {
+                return nil, error(genfile + ": list of filenames expected in line " + strconv.Itoa(i+1))
+            }
 ``
 
-return complete paths.
+return the files as complete paths.
 
 ``
             paths := []string{}

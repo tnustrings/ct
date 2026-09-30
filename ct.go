@@ -11,7 +11,8 @@ import (
   "regexp"
   "slices"
   "strconv"
-  "strings"  
+  "strings"
+  "github.com/tnustrings/ct/internal/fc"  
 )
 
 // embed the conf folder
@@ -48,10 +49,17 @@ var chop map[int]bool
 // is this ctline closing a chunk? was ischunkclose
 var chclo map[int]bool 
 
-// Line holds a line of text and its index in the ct file
-type Line struct {  // all lower case? does this clash with variables named 'line'?
+// Line holds a line of text and its index in the ct file or generated file (for now, depending on from where the line was read)
+type Line struct {  // all lower case? does this clash with variables named 'line'?  // rename Ctline?
     Txt string // the text of the line
     Ict int // the index of the line in the ct file
+
+    // have multiple types for line? but this messes with if we add lines to a chunk.  have one type for line and only a field I for line number?  but maybe it's a good idea to let Ict be specific, that the line number in the ct file is meant.  for now: use one type Line with different fields Ict and Igen and only use the fields that are needed.
+    // Igen holds the index of the line in the genfile
+    Igen int
+    // Genfile holds the path to the generated file 
+    Genfile string
+
 }
 
 // Chunk holds lines of codes, and the text before and after.
@@ -66,7 +74,7 @@ type Chunk struct {
     Txtb []Line
     // Nct says that this is the nth chunk in the ct file
     Nct int
-    // Fin (first-in-node) holds the nct of the chunk that is first in this chunk's node.  used by Tc() to keep track of nodes on chunk-based stack.
+    // Fin (first-in-node) holds the nct of the chunk that is first in this chunk's node.  used by Tc() to keep track of nodes on chunnk-based stack.
     Fin int
 }
 
@@ -81,7 +89,6 @@ type node struct {
     although ghost names can never be used to reference or go to a
     ghost node it's handy if the names of a node's ghostchilds are
     distinct for latex links */
-
     name string
 
     // parent is the node's from which this node is spawned/referenced. if it is nil this node is a root.
@@ -397,9 +404,12 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
 
     out := []Line{}
     
-    for _, chunk := range n.chunks {
+    for i, chunk := range n.chunks {
+        // if we are in a ghost node and this is it's first chunk, reflect this in the tagline by putting a . in front of ``
+        openingghost := false
+        if isghost(n.name) && i == 0 { openingghost = true }
         // add comments to be able to reconstruct the ct file
-        outnew := addopening(chunk, leadingspace, prog)
+        outnew := addopening(chunk, openingghost, leadingspace, prog)
 	out = append(out, outnew...)
 
         // assemble the code
@@ -452,14 +462,19 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
 }
 
 // addopening adds text lines, chunk tag and chunk number as comment as to be able to reconstruct the ct file
-func addopening(chunk *Chunk, leadingspace string, prog *Prog) []Line {
+func addopening(chunk *Chunk, openingghost bool, leadingspace string, prog *Prog) []Line {
     out := []Line{}
     for i, line := range(chunk.Txta) {
         // make a comment from the between-chunk text
         txt := leadingspace + prog.Cmtmark + " " + line.Txt
 	// add the chunk tag to the last comment line
 	if i == len(chunk.Txta)-1 {
-	    txt += " " + itoa(chunk.Nct) + chunk.Tag.Txt
+            // add the number of the chunk
+	    txt += "  " + itoa(chunk.Nct)
+            // if this chunk opens a ghost node add a . before the ``
+            if openingghost { txt += "." }
+            // add the tag
+            txt += chunk.Tag.Txt
 	}
 	out = append(out, Line{Txt: txt, Ict: line.Ict})
     }
@@ -473,6 +488,11 @@ func addclosing(chunk *Chunk, leadingspace string, prog *Prog) []Line {
         // add the text after a chunk
         txt := leadingspace + prog.Cmtmark + " " + line.Txt
 	out = append(out, Line{Txt:txt, Ict:line.Ict})
+    }
+    // add a text sep line if there was any txtb
+    if len(chunk.Txtb) > 0 {
+        txt := leadingspace + prog.Cmtmark + "``="
+        out = append(out, Line{Txt: txt})
     }
     return out
 }
@@ -513,7 +533,7 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
 	 if isroot && i == 0 && prog != nil && prog.Cmtmark != "" {
 	   // make the comment and insert it as first line
 	   comment := prog.Cmtmark + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
-	   out = append(out, Line{comment, -1})
+	   out = append(out, Line{Txt: comment, Ict: -1})
 	 }
 
          line := lines[i]
@@ -538,8 +558,7 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
 
             // comments need to inherit the identation of their function declaration line, cause that isn't added later.
             // this is done apart from alreadyspace in assemble, cause functions might not be declared on the first line of their chunk, which might be intended differently.
-            f := leadspacere.FindStringIndex(line.Txt)
-            funcspace := line.Txt[f[0]:f[1]]
+            funcspace := getleadingspace(line.Txt)
 
             // make a regexp for lines beginning with the function name
             funcnamere := regexp.MustCompile("^" + funcname)
@@ -562,7 +581,7 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
             // insert opening comment mark, if given.
             if prog.Cmtopen != "" {
 	        cmt := funcspace + prog.Cmtindent + prog.Cmtopen
-                out = append(out, Line{cmt, -1})
+                out = append(out, Line{Txt: cmt, Ict: -1})
             }
 
             // insert the comment lines.
@@ -584,13 +603,13 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
                 ict := myprevlines[skip + j].Ict
                 
                 // insert the comment line
-                out = append(out, Line{cmt, ict})
+                out = append(out, Line{Txt: cmt, Ict: ict})
             }
             
             // insert the closing comment mark, if given. 
             if prog.Cmtclose != "" {
                 cmt := funcspace + prog.Cmtindent + prog.Cmtclose
-		out = append(out, Line{cmt, -1})
+		out = append(out, Line{Txt: cmt, Ict: -1})
             }
 
 	    // if the function declaration comes after the comment,
@@ -912,7 +931,7 @@ func addcreatechilds(n *node, chunk *Chunk) {
 func makelines(a []string, ict int) []Line {
     out := []Line{}
     for i, s := range a {
-      out = append(out, Line{s, ict+i})
+      out = append(out, Line{Txt: s, Ict: ict+i})
     }
     return out
 }
@@ -1065,6 +1084,25 @@ func Ct(text string, ctfile string) error {
 	//debug(out)
 	// check what node tree was generated
         //printtree(roots[filename])
+
+        // add a general header line.
+        cmtmark := getpl(conf, proglang).Cmtmark
+        header := []Line{}
+        txt := cmtmark + " " + filename + " was generated from " + ctfile + ". "
+        header = append(header, Line{Txt: txt})
+        txt = cmtmark + " you can edit " + ctfile + " or " + filename + " and then run `ct " + ctfile + "` to update the other file."
+        header = append(header, Line{Txt: txt})
+        txt = cmtmark + " when editing this file leave the `` tags."
+        header = append(header, Line{Txt: txt})
+        // add a header line that is read by tc with the name of the ct file and all generated files.
+        txt = cmtmark + "`` " + ctfile
+        for _, genf := range keys(roots) { txt += " " + genf }
+        header = append(header, Line{Txt: txt})
+        // add an empty line
+        header = append(header, Line{Txt: ""})
+
+        // insert the header into out
+        out = slices.Insert(out, 0, header...)
 	
 	// map from the line number in the generated source to the original line number in the ct
 	for i, line := range out {
@@ -1121,12 +1159,12 @@ func checkdecl(n *node) bool {
 func Ctwrite(ctfile string) error {
 
     // read the file
-    b, _ := os.ReadFile(path)
+    b, _ := os.ReadFile(ctfile)
     text := string(b)
 
     // get directory and filename
-    dir := fc.Dir(path)
-    filename := filepath.Base(path)
+    dir := fc.Dir(ctfile)
+    filename := filepath.Base(ctfile)
 
     //fmt.Printf("hello ctwrite\n")
     
@@ -1213,7 +1251,7 @@ func getpl(conf *Conf, pl string) *Prog {
 	}
 	// do any of the extensions match?
 	for _, ext := range prog.Ext {
-	    if ext == pl || or "." + ext == pl {
+	    if ext == pl || "." + ext == pl {
 	        return &prog
             }
 	}
