@@ -20,8 +20,6 @@ import (
 ``main``
 ``checkoverwrite``
 ``shouldtc``
-``filesfromgen``
-``filesfromct``
 ``
 
 # main function
@@ -200,24 +198,22 @@ find out all generated files.
 if the user passed a generated file, read the ct file and eventual other
 generated files from its header.
 
-``/main/compile/ct or tc:
-            // load the config
-            conf, err := loadconf()
-            if err != nil { return err }
-
-            if filepath.Ext(file) != ".ct" {
-                ctfile, genfiles, err = filesfromgen(file, conf)
-                if err != nil { log.Fatal(err) }
-            }
-``
-
 if the user passed a ct file, compile it and get the generated files
 from there.
 
-``
-            else {
+``/main/compile/ct or tc:
+            // load the config
+            conf, err := ct.Loadconf()
+            if err != nil { log.Fatal(err) }
+
+            var ctfile string
+            var genfiles []string
+            if filepath.Ext(file) != ".ct" {
+                ctfile, genfiles, err = ct.Filesfromgen(file, conf)
+                if err != nil { log.Fatal(err) }
+            } else {
                 ctfile = file
-                genfiles, err = filesfromct(ctfile)
+                genfiles, err = ct.Filesfromct(ctfile)
                 if err != nil { log.Fatal(err) }
             }
 ``
@@ -225,7 +221,7 @@ from there.
 run ct or tc based on the dates of the files.
 
 ``
-            if shouldtc(ctfile, genfiles) {
+            if ok, err := shouldtc(ctfile, genfiles); ok {
                 err := ct.Tcwrite(genfiles, ctfile)
                 if err != nil { log.Fatal(err) }
             } else {
@@ -331,7 +327,7 @@ shouldtc says whether ct or tc should be run: if one of the generated
 files is newer than the ct file, run tc, else run ct.
 
 ``/shouldtc:
-func shouldtc(ctfile string, genfiles []string) bool, err {
+func shouldtc(ctfile string, genfiles []string) (bool, error) {
     ``_``
 }
 ``
@@ -339,19 +335,19 @@ func shouldtc(ctfile string, genfiles []string) bool, err {
 get the file info for the ct file.
 
 ``_:
-    ctinfo, err := fs.FileInfo(ctfile)
-    if err != nil { return (false, err) }
+    ctinfo, err := os.Lstat(ctfile)
+    if err != nil { return false, err }
 ``
 
 go over the gen files and see whether one is newer than the ct file.
 
 ``
     for _, genfile := range genfiles {
-        geninfo, err := fs.FileInfo(genfile)
-        if err != nil { return (false, err) }
-        if geninfo.ModTime.After(ctinfo.ModTime) {
+        geninfo, err := os.Lstat(genfile)
+        if err != nil { return false, err }
+        if geninfo.ModTime().After(ctinfo.ModTime()) {
             // one generated file was modified after ct file was modified, run tc
-            return true
+            return true, nil
         }
     }
 ``
@@ -359,104 +355,6 @@ go over the gen files and see whether one is newer than the ct file.
 if all generated files were modified before the ct file was modified, run ct.
 
 ``
-    return false
+    return false, nil
 ``
 
-filesfromgen returns the paths of associated files (ct file and
-generated files) from the header of a generated file. a header line would be:
-#`` myprog.ct gen1.py gen2.py 
-
-``/filesfromgen:
-func filesfromgen(genfile string) string, []string, error {
-    ``_``
-}
-``
-
-get the file extension, dir, and load the programming language info.
-
-``_:
-    ext := filepath.Ext(genfile)
-    dir := fc.Dir(genfile)    
-    prog := getpl(conf, ext)
-``
-
-open the file and make a scanner.
-
-``
-    file, err := os.Open(genfile)
-    if err != nil { return err }
-    defer file.Close()
-    scanner = bufio.NewScanner(file)
-``
-
-read the lines, see whether a line matches the end of a ct header.
-
-``
-    i := 0
-    for scanner.Scan() {
-        line := scanner.Text()
-        if isctheaderend(line, prog) {
-            ``.``
-        }
-        i++
-    }
-``
-
-extract the file names from the end-of-header line.
-
-``
-            filenames, err = ctheaderfiles(line, prog)
-            if len(filenames) == 0 {
-                return nil, error(genfile + ": list of filenames expected in line " + strconv.Itoa(i+1))
-            }
-``
-
-return the files as complete paths.
-
-``
-            paths := []string{}
-            for _, path := range filenames {
-                if dir != "" { path = dir + "/" + path } // TODO okay so?
-                paths = append(paths, path)
-            }
-            return paths[0], paths[1:], nil
-``
-
-if no ct line found, error.
-
-``/filesfromgen/_
-    log.Fatal("no ct-line in " + genfile)
-``
-
-filesfromct returns the paths of the files generated from a ct file.
-
-``/filesfromct:
-func filesfromct(ctfile) []string, err {
-    ``_``
-}
-``
-
-run codetext.
-
-``
-    err := Ct(text, ctfile)
-    if err != nil { return nil, err }
-``
-
-get the directory.
-
-``
-    dir := fc.Dir(path)
-``
-
-collect the generated filenames, return the complete paths.
-
-``
-    out := []string{}
-    for path, _ := range roots { // TODO run this on a ct instance? or let Ct() return the roots?
-        if dir != "" { path = dir + "/" + path } // TODO okay so?
-
-        out = append(out, path)
-    }
-    return out, nil
-``

@@ -158,9 +158,9 @@ type Prog struct {
     Fnccmt string // function comment
 }
 
-// loadconf loads the conf file. if it's not there, create it.
+// Loadconf loads the conf file. if it's not there, create it.
 // should we make the conf accessible or just package it with the program?
-func loadconf() (*Conf, error) {
+func Loadconf() (*Conf, error) {
     // create an empty conf and unmarshal the conf into it
     conf := Conf{}
     b, err := embedded.ReadFile("conf/conf.json")
@@ -389,7 +389,7 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
         addspace = leadingspace[0:len(leadingspace)-len(alreadyspace)]
     }
 
-    prog := getpl(conf, proglang)
+    prog := Getpl(conf, proglang)
 
      // insert comments from previous text nodes.  do this here because the programming language is now safe to be known after all the nodes have been put.  line referencing depends on whether lines were inserted, so do it here also.
     // outlines := insertcmt(n.lines, n.prevlines, proglang, n.isroot(), ctfile, conf)  // TODO uncomment
@@ -509,7 +509,7 @@ func addnodeclose(nct int, lastchunk *Chunk, leadingspace string, prog *Prog) []
 // insertcmt inserts potential function comments from prevlines into lines. it also inserts don't-edit comments.
 func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot bool, ctfile string, conf *Conf) []Line {
 
-     prog := getpl(conf, proglang)
+     prog := Getpl(conf, proglang)
      
     // make a regexp to recognize (and extract) function names for the node's programming language.
     funcre := regexp.MustCompile(prog.Fncre)
@@ -962,7 +962,7 @@ func printtree(node *node) {
 func Ct(text string, ctfile string) error {
 
     // load the config
-    conf, err := loadconf()
+    conf, err := Loadconf()
     if err != nil {
         return err
     }
@@ -1086,7 +1086,7 @@ func Ct(text string, ctfile string) error {
         //printtree(roots[filename])
 
         // add a general header line.
-        cmtmark := getpl(conf, proglang).Cmtmark
+        cmtmark := Getpl(conf, proglang).Cmtmark
         header := []Line{}
         txt := cmtmark + " " + filename + " was generated from " + ctfile + ". "
         header = append(header, Line{Txt: txt})
@@ -1242,8 +1242,8 @@ func debug(a any) {
     fmt.Println(a)
 }
 
-// getpl gets the entry for a programming language from conf. pl can be with leading dot or without.
-func getpl(conf *Conf, pl string) *Prog {
+// Getpl gets the entry for a programming language from conf. pl can be with leading dot or without.
+func Getpl(conf *Conf, pl string) *Prog {
     for _, prog := range conf.Proglang {
         // does the name match?
         if prog.Name == pl {

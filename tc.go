@@ -3,12 +3,14 @@
 package ct
 
 import (
+  "bufio"
   "fmt"
   "os"
   "path/filepath"
   "regexp"
   "strconv"  
   "strings"
+  "github.com/tnustrings/ct/internal/fc"  
 )
 
 // variables
@@ -73,7 +75,7 @@ func Tcwrite(genfiles []string, ctfile string) error {
 func Tc(genfiles []string) (string, error) {
 
     // load the config
-    conf, err := loadconf()
+    conf, err := Loadconf()
     if err != nil { return "", err }
 
     // reset variables
@@ -89,7 +91,7 @@ func Tc(genfiles []string) (string, error) {
         text := string(b)
         a := strings.Split(text, "\n") // TODO generic line split method?
         // get the progamming language
-        prog := getpl(conf, filepath.Ext(genfile))
+        prog := Getpl(conf, filepath.Ext(genfile))
         
         // make Line instances.  skip the ct header.
         skip := true
@@ -114,7 +116,7 @@ func Tc(genfiles []string) (string, error) {
     for _, l := range lines {
         line := l.Txt
         // get the programming language from the file extension.
-        prog := getpl(conf, filepath.Ext(l.Genfile))
+        prog := Getpl(conf, filepath.Ext(l.Genfile))
 
         if ischunkopening(line, prog) { // this line opens a chunk.
 
@@ -348,4 +350,63 @@ func maketxt(cmt []Line, prog *Prog) []Line {
         out = append(out, Line{Txt: txt})
     }
     return out
+}
+
+
+// Filesfromgen returns the paths of associated files (ct file and
+// generated files) from the header of a generated file. a header line would be:
+// #`` myprog.ct gen1.py gen2.py 
+func Filesfromgen(genfile string, conf *Conf) (string, []string, error) {
+    // get the file extension, dir, and load the programming language info.
+    ext := filepath.Ext(genfile)
+    dir := fc.Dir(genfile)    
+    prog := Getpl(conf, ext)
+    
+    // open the file and make a scanner.
+    file, err := os.Open(genfile)
+    if err != nil { return "", []string{}, err }
+    defer file.Close()
+    scanner := bufio.NewScanner(file)
+
+    // read the lines, see whether a line matches the end of a ct header.
+    i := 0
+    for scanner.Scan() {
+        line := scanner.Text()
+        if isctheaderend(line, prog) {
+            // extract the file names from the end-of-header line.
+            filenames := ctheaderfiles(line, prog)
+            if len(filenames) == 0 {
+                return nil, error(genfile + ": list of filenames expected in line " + strconv.Itoa(i+1))
+            }
+            // return the files as complete paths.
+            paths := []string{}
+            for _, path := range filenames {
+                if dir != "" { path = dir + "/" + path } // TODO okay so?
+                paths = append(paths, path)
+            }
+            return paths[0], paths[1:], nil
+        }
+        i++
+    }
+    // if no ct line found, error.
+
+    log.Fatal("no ct-line in " + genfile)
+}
+
+// Filesfromct returns the paths of the files generated from a ct file.
+func Filesfromct(ctfile) ([]string, err) {
+    // run codetext.
+    err := Ct(text, ctfile)
+    if err != nil { return nil, err }
+    // get the directory.
+    dir := fc.Dir(path)
+    
+    // collect the generated filenames, return the complete paths.
+    out := []string{}
+    for path, _ := range roots { // TODO run this on a ct instance? or let Ct() return the roots?
+        if dir != "" { path = dir + "/" + path } // TODO okay so?
+
+        out = append(out, path)
+    }
+    return out, nil
 }
