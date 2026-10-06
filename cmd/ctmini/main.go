@@ -3,7 +3,10 @@
 package main
 
 import (
-    "os" 
+    "fmt"
+    "log"
+    "os"
+    "path/filepath"
     "github.com/tnustrings/ct" 
 )
 
@@ -12,5 +15,16 @@ func main() {
     fname := os.Args[1]
     //b, _ := os.ReadFile(fname)
     //ct.Ctwrite(string(b), "", fname)
-    ct.Ctwrite(fname) // TODO pass path?
+    // for ct files run Ctwrite
+    if filepath.Ext(fname) == ".ct" {
+        ct.Ctwrite(fname) 
+    } else { // for non ct files run tc and print result for now.
+        // get the genfiles
+        _, genfiles, err := ct.Filesfromgen(fname)
+        if err != nil { log.Fatal(err) }
+        // run tc and print result
+        out, err := ct.Tc(genfiles)
+        if err != nil { log.Fatal(err) }
+        fmt.Println(out)
+    }
 }

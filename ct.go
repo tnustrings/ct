@@ -270,11 +270,12 @@ func isdblticks(line string) bool {
     return re.MatchString(line)
 }
 
-// istxtsep says whether a line is the text seperator ``= that divides text after and before a chunk if needed.
-func istxtsep(line string) bool {
+// istxtsepinct says whether a line is the text seperator ``= that divides text after and before a chunk in ct.
+func istxtsepinct(line string) bool {
     re := regexp.MustCompile("^``=\\s*$")
     return re.MatchString(line)
 }
+
 
 // isghost says whether it's a ghost-name (starting with a .) # to js
 func isghost(name string) bool {
@@ -1007,7 +1008,7 @@ func Ct(text string, ctfile string) error {
         // we need to keep track whether we're in code or not cause two ticks `` could both close and open (an unnamed) chunk.
 
         // fish out text seperating lines.
-        if istxtsep(line.Txt) { // we're at a text sep line ``=
+        if istxtsepinct(line.Txt) { // we're at a text sep line ``=
             //fmt.Println("is txt sep:" + line.Txt)
 	    // append whatever was collected as text before ``= to the current chunk's txtb
 	    for _, l := range txt { currentchunk.Txtb = append(currentchunk.Txtb, l) }

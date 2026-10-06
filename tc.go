@@ -16,7 +16,6 @@ import (
 // variables
 
 // stack holds the nct (number in ct file) of the current chunk
-// for pop see https://yourbasic.org/golang/implement-stack/
 var stack *Stack[int]
 
 // chunks holds the chunk at each nct (number in ct file)
@@ -27,6 +26,7 @@ var chunks map[int]*Chunk
 var lastopened int
 
 // Stack is a stack based on a slice
+// it is based on this example https://yourbasic.org/golang/implement-stack/
 // TODO put in util package?
 type Stack[T any] struct {
     // a holds the underlying slice
@@ -49,7 +49,7 @@ func (st *Stack[T]) pop() T {
     // if len(st.a) == 0 { return nil } // TODO what to do?
     elem := st.a[len(st.a)-1]
     // remove the top element
-    st.a = st.a[:len(st.a)]
+    st.a = st.a[:len(st.a)-1]
     // return
     return elem
 }
@@ -95,11 +95,17 @@ func Tc(genfiles []string) (string, error) {
         
         // make Line instances.  skip the ct header.
         skip := true
+        afterheaderend := false
         for j, l := range a {
             // skip lines before and including the first `` line.
             if skip && isctheaderend(l, prog) {
+                afterheaderend = true
+                continue
+            }
+            // skip empty lines after header {
+            if skip && afterheaderend && strings.TrimSpace(l) != "" {
                 skip = false // don't skip anymore
-                continue // but skip this line still
+                //continue // but skip this line still
             }
             if skip { continue }
             
@@ -115,11 +121,12 @@ func Tc(genfiles []string) (string, error) {
     // go over the lines and fill the chunks map, from which the ct is built.
     for _, l := range lines {
         line := l.Txt
+        //fmt.Println(strconv.Itoa(i) + ": " + line)
         // get the programming language from the file extension.
         prog := Getpl(conf, filepath.Ext(l.Genfile))
 
         if ischunkopening(line, prog) { // this line opens a chunk.
-
+            //fmt.Println("line type: ischunkopening")
             // append the line to collected comments
             cmt = append(cmt, l)
 
@@ -140,16 +147,17 @@ func Tc(genfiles []string) (string, error) {
             chunks[nct] = chunk
 
             // link the new chunk to the first chunk of its node, to keep track of which chunks belong together in a node.
-            // if it isn't a declaration (node-opening) chunk, link to the same first chunk as the previous chunk did.
-            if !isdeclaration(chunk.Tag.Txt) {
-                chunk.Fin = chunks[stack.top()].Fin
-            } else {
-                // if it's a declaration chunk, it is starting a new node, link to itself.
+
+            if isdeclaration(chunk.Tag.Txt) || dot == "." {
+                // if it's a declaration chunk, or opening a ghost node (dot == "."), it is starting a new node, link to itself.
                 chunk.Fin = nct
+            } else {
+                // if it isn't a declaration (node-opening) chunk, link to the same first chunk as the previous chunk did.
+                chunk.Fin = chunks[stack.top()].Fin                
             }
 
-            // if it's a declaration line, put a reference tag into the code of the mother (the chunk currently on top of the stack).
-            if isdeclaration(chunk.Tag.Txt) {
+            // if it's a declaration line (and if it's not a root chunk), put a reference tag into the code of the mother (the chunk currently on top of the stack).
+            if stack.n() > 0 && isdeclaration(chunk.Tag.Txt) {
                 txt := getleadingspace(line) + "``" + getname(chunk.Tag.Txt) + "``"
                 chunks[stack.top()].Code = append(chunks[stack.top()].Code, Line{Txt: txt})
             }
@@ -165,15 +173,16 @@ func Tc(genfiles []string) (string, error) {
             // clear the comment collect
             cmt = []Line{}
 
-            // now put the new chunk on top of the stack
+            // now (after we added the reference tag into the mother chunk) put the new chunk on top of the stack
             stack.push(nct)
-        }
-        if isnodeclosing(line, prog) { // this line closes a node.
-
+            //printstack()
+        } else if isnodeclosing(line, prog) { // this line closes a node.
+            //fmt.Println("line type: isnodeclosing")
             // only nodes are closed explicitly, chunks are closed implicitly by the comment opening the next chunk.
             
             // get the nct of the first chunk in the node this line closes.
             nctclose := parsenodeclose(line, prog)
+            //fmt.Printf("nctclose: %d\n", nctclose)
             
             // if no nct wasn't given in the node-close, -1 is returned. in this case, we close the current node.
             if nctclose == -1 {
@@ -191,26 +200,33 @@ func Tc(genfiles []string) (string, error) {
             }
 
             // now we are at the nctclose node. pop all its chunks.
-            for chunks[stack.top()].Fin == nctclose {
+            for stack.n() > 0 && chunks[stack.top()].Fin == nctclose {
+                //fmt.Println("calling pop")
+                //fmt.Printf("stack.n() before: %d\n", stack.n())  
                 // pop
                 stack.pop()
+                //fmt.Printf("stack.n() after: %d\n", stack.n())                  
             }
 
             // now when we append new code we append it to the chunk we were in before we opened the node that was just closed.
 
-        } else if istxtsep(line) { // this line is a text sep.
+        } else if istxtsepingen(line, prog) { // this line is a text sep.
+            //fmt.Println("line type: istxtsep")
             // add the collected comments as txtb of the current chunk
             chunks[stack.top()].Txtb = maketxt(cmt, prog)
 
             // add a text sep marker ``= to txtb for ct building later
+            chunks[stack.top()].Txtb = append(chunks[stack.top()].Txtb, Line{Txt: ""})
             chunks[stack.top()].Txtb = append(chunks[stack.top()].Txtb, Line{Txt: "``="})
 
             // clear the comment collection
             cmt = []Line{}
         } else if iscmt(line, prog) { // this line is a normal comment line without ct notation.
+            //fmt.Println("line type: is normal cmt")        
             // collect the comment
             cmt = append(cmt, l)
-        } else { // this line is a code line.
+        } else if stack.n() > 0 { // this line is a code line.  check that there is something on the stack to skip empty lines before the first node was opened and after the last node was closed.
+            //fmt.Println("line type: is code")                
             // if there's something in collected comments, they would be normal code comments without ct functionality. append them.
             if len(cmt) > 0 {
                 chunks[stack.top()].Code = append(chunks[stack.top()].Code, cmt...)
@@ -227,20 +243,38 @@ func Tc(genfiles []string) (string, error) {
     // build the ct by going over the chunks in order and concatenating the text, tag and code inside them.
     out := []string{}
     for nct := 1; nct <= len(chunks); nct++ {
+        //fmt.Println("adding chunk " + nct)
         chunk := chunks[nct]
         // append the preceeding text
         for _, line := range chunk.Txta { out = append(out, line.Txt) }
+        // append an empty line
+        out = append(out, "")
         // append the chunk tag
         out = append(out, chunk.Tag.Txt)
         // append the code
         for _, line := range chunk.Code { out = append(out, line.Txt) }
+        // append a close tag
+        out = append(out, "``")
+        // append an empty line
+        out = append(out, "")
 
         // append the text after the code (if any)
-        for _, line := range chunk.Txtb { out = append(out, line.Txt) }
+        for _, line := range chunk.Txtb { out = append(out, line.Txt); }
+        if len(chunk.Txtb) > 0 {
+            out = append(out, "")
+        }
     }
 
     // return the complete ct string
     return strings.Join(out, "\n"), nil
+}
+
+
+// printstack prints the stack
+func printstack() {
+    fmt.Println("on stack:")
+    for _, n := range stack.a { fmt.Printf("%d(fin:%d) ", n, chunks[n].Fin) }
+    fmt.Println()
 }
 
 // chunkopenre is the string from which the chunk open regexp is built. it has a placeholder %s to dynamically insert the comment mark for the programming language.  it holds four capture groups: the comment text, the chunk nct, a dot if this line opens a ghost node, and the chunk tag.  if one of the optional capture groups is not used, the others retain their positions in string array returned by FindStringSubmatch.
@@ -270,7 +304,7 @@ func parseopening(line string, prog *Prog) (string, int, string, string) {
 }
     
 // chunkclosere is the string from which the chunk close regexp is built. like chunkopenre, it has a placeholder %s for the comment mark used by the programming language.
-var chunkclosere = "^\\s*%s``\\s(\\d+)?*$"
+var chunkclosere = "^\\s*%s``(\\d+)?\\s*$"
 
 // isnodeclosing says whether this comment line closes a note (the chunks that make up a node are closed implicitly by the next chunk).  a node-close line consists of the last line of code in this chunk followed by a comment marker immediately followed by `` (without whitespace) followed by an optional number referencing the opening chunk in the node this line closes.
 func isnodeclosing(line string, prog *Prog) bool {
@@ -296,6 +330,12 @@ var cmtre = "^\\s*%s\\s*(.*)$"
 // iscmt says whether this line is a comment in the given programming lang.
 func iscmt(line string, prog *Prog) bool {
     re := regexp.MustCompile(fmt.Sprintf(cmtre, prog.Cmtmark))
+    return re.MatchString(line)
+}
+
+// istxtsepingen says whether a line is the text seperator ``= that divides text after and before a chunk in generated code.
+func istxtsepingen(line string, prog *Prog) bool {
+    re := regexp.MustCompile(fmt.Sprintf("^\\s*%s``=\\s*$", prog.Cmtmark))
     return re.MatchString(line)
 }
 
@@ -356,7 +396,12 @@ func maketxt(cmt []Line, prog *Prog) []Line {
 // Filesfromgen returns the paths of associated files (ct file and
 // generated files) from the header of a generated file. a header line would be:
 // #`` myprog.ct gen1.py gen2.py 
-func Filesfromgen(genfile string, conf *Conf) (string, []string, error) {
+func Filesfromgen(genfile string) (string, []string, error) {
+
+    // load the config
+    conf, err := Loadconf()
+    if err != nil { return "", []string{}, nil }
+
     // get the file extension, dir, and load the programming language info.
     ext := filepath.Ext(genfile)
     dir := fc.Dir(genfile)    
@@ -376,7 +421,7 @@ func Filesfromgen(genfile string, conf *Conf) (string, []string, error) {
             // extract the file names from the end-of-header line.
             filenames := ctheaderfiles(line, prog)
             if len(filenames) == 0 {
-                return nil, error(genfile + ": list of filenames expected in line " + strconv.Itoa(i+1))
+                return "", []string{}, fmt.Errorf(genfile + ": list of filenames expected in line " + strconv.Itoa(i+1))
             }
             // return the files as complete paths.
             paths := []string{}
@@ -389,17 +434,19 @@ func Filesfromgen(genfile string, conf *Conf) (string, []string, error) {
         i++
     }
     // if no ct line found, error.
-
-    log.Fatal("no ct-line in " + genfile)
+    return "", []string{}, fmt.Errorf("no ct-line in " + genfile)
 }
 
 // Filesfromct returns the paths of the files generated from a ct file.
-func Filesfromct(ctfile) ([]string, err) {
+func Filesfromct(ctfile string) ([]string, error) {
+    // read the file
+    b, _ := os.ReadFile(ctfile)
+    text := string(b)
     // run codetext.
     err := Ct(text, ctfile)
     if err != nil { return nil, err }
     // get the directory.
-    dir := fc.Dir(path)
+    dir := fc.Dir(ctfile)
     
     // collect the generated filenames, return the complete paths.
     out := []string{}

@@ -202,14 +202,10 @@ if the user passed a ct file, compile it and get the generated files
 from there.
 
 ``/main/compile/ct or tc:
-            // load the config
-            conf, err := ct.Loadconf()
-            if err != nil { log.Fatal(err) }
-
             var ctfile string
             var genfiles []string
             if filepath.Ext(file) != ".ct" {
-                ctfile, genfiles, err = ct.Filesfromgen(file, conf)
+                ctfile, genfiles, err = ct.Filesfromgen(file)
                 if err != nil { log.Fatal(err) }
             } else {
                 ctfile = file
