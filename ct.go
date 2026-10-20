@@ -28,6 +28,10 @@ var ctlines []string
 // for each generated file, map its line numbers to the original line numbers in ct file
 var ictmap map[string]map[int]int
 
+// map from ct lines to gen files and lines
+var filegenmap map[int]string
+var igenmap map[int]int
+
 // currentnode is the node we're currently at
 var currentnode *node
 
@@ -510,9 +514,18 @@ func addnodeclose(nct int, lastchunk *Chunk, leadingspace string, prog *Prog) []
 // insertcmt inserts potential function comments from prevlines into lines. it also inserts don't-edit comments.
 func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot bool, ctfile string, conf *Conf) []Line {
 
-     prog := Getpl(conf, proglang)
+     prog := getpl(conf, proglang)
+
+     // don't do anything if no programming language or no function re given
+     if prog == nil || prog.Fncre == "" {
+       return
+     }
+     // don't do anything if comment marks are not given.
+     if prog.Cmtline == "" || (prog.Cmtopen == "" && prog.Cmtclose == "") {
+       return
+     }
      
-    // make a regexp to recognize (and extract) function names for the node's programming language.
+     // make a regexp to recognize (and extract) function names for the node's programming language.
     funcre := regexp.MustCompile(prog.Fncre)
     
     // are comments inserted before or after function declaration?
@@ -533,8 +546,13 @@ func insertcmt(lines []Line, prevlines map[int][]Line, proglang string, isroot b
 	 // insert a 'don't edit' message.
 	 if isroot && i == 0 && prog != nil && prog.Cmtmark != "" {
 	   // make the comment and insert it as first line
-	   comment := prog.Cmtmark + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
-	   out = append(out, Line{Txt: comment, Ict: -1})
+	   //comment := pl.Cmtline + " automatically generated, DON'T EDIT. please edit " + ctfile + " from where this file stems."
+           comment := pl.Cmtline + " " + n.name + " is automatically generated from " + ctfile + ". please edit " + ctfile + "."
+	   n.lines = slices.Insert(n.lines, 0, Line{comment, -1})
+
+	   // immediately increase i and roll on
+	   // with the real first line of code, which is now line[1]
+	   i++
 	 }
 
          line := lines[i]
@@ -976,6 +994,8 @@ func Ct(text string, ctfile string) error {
     currentnode = nil
     openghost = nil
     ictmap = make(map[string]map[int]int)
+    filegenmap = make(map[int]string)
+    igenmap = make(map[int]int)
     nodeatict = make(map[int]*node)
     ctlines = ctlines[:0]
     chop = make(map[int]bool)
@@ -1215,6 +1235,28 @@ func Ict(genfile string, igen int) (int, error) {
     }
     return ictmap[genfile][igen], nil
 }
+
+// Igen gets the index of the generated file at a given ct-index.
+func Igen(ict int) (int, error) {
+     if _, ok := igenmap[ict]; !ok {
+         return -1, errors.New(fmt.Sprintf("no generated file for line %d", ict))
+     }
+     return igenmap[ict], nil
+}
+
+// Filegen gets the name of the generated file at a given ct-index.
+func Filegen(ict int) (string, error) {
+     if _, ok := filegenmap[ict]; !ok {
+         return "", errors.New(fmt.Sprintf("no generated file for line %d", ict))
+     }
+     return filegenmap[ict], nil
+}
+
+// IGen holds a filename and index of generated file
+/*struct IGen {
+    I int
+    Name string
+}*/
 
 // Chop says whether a ct line is a chunk opening
 func Chop(line int) bool {
