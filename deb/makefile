@@ -20,7 +20,7 @@ ct.deb: ../bin/ct
 
 	cp ../bin/ct "ct-${version}/usr/local/bin"
 
-	# manually create a file ct-<version>/deb/DEBIAN/control and put in the package info.
+	# copy the `control` file from this dir into ct-<version>/DEBIAN/ and put in the package info.
 	# build the package
 	dpkg-deb --build "ct-${version}"
 

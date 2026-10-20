@@ -1,5 +1,5 @@
 # name
-name = "ct"
+name = ct
 
 # get the version from github tag
 # sort by version; get the last line; delete the v from the version tag cause python build seems to strip it as well
@@ -21,6 +21,30 @@ bin/ctmini: # build ctmini
 
 .PHONY deb:
 	cd deb; make
+
+publish:
+	make deb
+	# move the version tag to the most recent commit
+	git tag -f "v${version}"
+	# delete tag on remote
+	git push origin ":refs/tags/v${version}" 
+	git push --tags   # push the local tags
+	gh release create "v${version}" "./deb/${name}-v${version}.deb"
+
+publish-update: # if an asset was already uploaded, delete it before uploading again
+	make deb
+	# does the tag updating also update the source code at the resource?
+	# move the version tag to the most recent commit
+	git tag -f "v${version}"
+	# delete tag on remote
+	git push origin ":refs/tags/v${version}" 
+	# re-push the tag to the remote
+	git push --tags
+	gh release delete-asset "v${version}" "${name}-v${version}.deb" -y
+	gh release upload "v${version}" "./deb/${name}-v${version}.deb"
+	# apparently the tag change rolled the release back to draft, set it to publish again
+	gh release edit "v${version}" --draft=false
+
 
 publish-update: # if an asset was already uploaded, delete it before uploading again
 	make

@@ -1,0 +1,5 @@
+Package: ct
+Version: 0.1.0
+Maintainer: tnustrings
+Architecture: all
+Description: code with text
