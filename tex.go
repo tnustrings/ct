@@ -11,9 +11,9 @@ func Totex(text string, ctfile string, mdtotex string) string {
     Ct(text, ctfile)
     out := ""
     if ctfile != "" {
-        out += fmt.Sprintf("% this file was generated from %s. please edit %s.\n", ctfile, ctfile)
+        out += fmt.Sprintf("%% this file was generated from %s. please edit %v.\n", ctfile, ctfile)
     } else {
-        out += fmt.Sprintf("% this file is generated. please edit the .ct file from which it stems.\n")
+        out += fmt.Sprintf("%% this file is generated. please edit the .ct file from which it stems.\n")
     }
     // are we in a chunk?
     inchunk := false
