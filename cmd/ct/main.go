@@ -1,5 +1,5 @@
 // main.go was generated from main.ct. 
-// you can edit main.ct or main.go and then run `ct main.ct` to update the other file.
+// if you edit main.go, run `ct -tc main.go` afterwards to update main.ct.
 // when editing this file leave the `` tags.
 //`` main.ct main.go
 
