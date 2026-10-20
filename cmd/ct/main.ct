@@ -49,6 +49,7 @@ get the flags.
     fl_l := flag.String("l", "", "for a line number from a generated file, which line is it in the ct file? e.g. -l genfile.js:9")
     fl_header := flag.String("header", "", "latex template header file")
     fl_lower := flag.Bool("lower", false, "lowercase tex template")
+    fl_tc := flag.Bool("tc", false, "run reverse: build ct file from generated files")
 
     flag.Parse()
 ``
@@ -190,8 +191,10 @@ write and say which file was written.
 
 ### ct or tc
 
-the user can pass a ct file or a generated file.  based on which of
-the files is newer, run ct or tc (reverse ct).
+the user can pass a ct file or a generated file. if -tc was not set,
+run ct, else run tc.
+
+TODO maybe: based on which of the files is newer, run ct or tc (reverse ct).
 
 find out all generated files.
 
@@ -204,6 +207,7 @@ from there.
 ``/main/compile/ct or tc:
             var ctfile string
             var genfiles []string
+            var err error
             if filepath.Ext(file) != ".ct" {
                 ctfile, genfiles, err = ct.Filesfromgen(file)
                 if err != nil { log.Fatal(err) }
@@ -214,9 +218,22 @@ from there.
             }
 ``
 
-run ct or tc based on the dates of the files.
+run ct or tc based on the -tc flag.
 
 ``
+            if *fl_tc {
+                // TODO: warn if ct file is newer.  maybe in Tcwrite()?
+                err = ct.Tcwrite(genfiles, ctfile)
+                if err != nil { log.Fatal(err) }
+            } else {
+                err = ct.Ctwrite(ctfile) 
+                if err != nil { log.Fatal(err) }
+            }
+``
+
+run ct or tc based on the dates of the files.
+
+`
             if ok, err := shouldtc(ctfile, genfiles); ok {
                 err := ct.Tcwrite(genfiles, ctfile)
                 if err != nil { log.Fatal(err) }
@@ -225,7 +242,7 @@ run ct or tc based on the dates of the files.
                 // err := ct.Ctwrite(ctfile) 
                 if err != nil { log.Fatal(err) }
             }
-``
+`
             
 
 ### go to line

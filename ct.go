@@ -1091,7 +1091,8 @@ func Ct(text string, ctfile string) error {
         header := []Line{}
         txt := cmtmark + " " + filename + " was generated from " + ctfile + ". "
         header = append(header, Line{Txt: txt})
-        txt = cmtmark + " you can edit " + ctfile + " or " + filename + " and then run `ct " + ctfile + "` to update the other file."
+        //txt = cmtmark + " you can edit " + ctfile + " or " + filename + " and then run `ct " + ctfile + "` to update the other file."
+        txt = cmtmark + " if you edit " + filename + ", run `ct -tc " + filename + "` afterwards to update " + ctfile + "."
         header = append(header, Line{Txt: txt})
         txt = cmtmark + " when editing this file leave the `` tags."
         header = append(header, Line{Txt: txt})

@@ -35,6 +35,7 @@ func main() {
     fl_l := flag.String("l", "", "for a line number from a generated file, which line is it in the ct file? e.g. -l genfile.js:9")
     fl_header := flag.String("header", "", "latex template header file")
     fl_lower := flag.Bool("lower", false, "lowercase tex template")
+    fl_tc := flag.Bool("tc", false, "run reverse: build ct file from generated files")
 
     flag.Parse()
   // get the positional args.  4``
@@ -100,6 +101,20 @@ func main() {
   // 
   // now comes the part of main involving assembly of the given ct file.  12``/main/compile:
     if *fl_l != "" { 
+        // run ct or tc based on the dates of the files.
+        // 
+        // `
+        //             if ok, err := shouldtc(ctfile, genfiles); ok {
+        //                 err := ct.Tcwrite(genfiles, ctfile)
+        //                 if err != nil { log.Fatal(err) }
+        //             } else {
+        //                 // TODO uncomment.  for now don't overwrite ct file, until it's safe.bm
+        //                 // err := ct.Ctwrite(ctfile) 
+        //                 if err != nil { log.Fatal(err) }
+        //             }
+        // `
+        //             
+        // 
         // ### go to line
         // 
         // map from line number in generated source to original line number in ct.
@@ -144,8 +159,10 @@ func main() {
         } else {
 	    // ### ct or tc
 	    // 
-	    // the user can pass a ct file or a generated file.  based on which of
-	    // the files is newer, run ct or tc (reverse ct).
+	    // the user can pass a ct file or a generated file. if -tc was not set,
+	    // run ct, else run tc.
+	    // 
+	    // TODO maybe: based on which of the files is newer, run ct or tc (reverse ct).
 	    // 
 	    // find out all generated files.
 	    // 
@@ -156,6 +173,7 @@ func main() {
 	    // from there.  16``/main/compile/ct or tc:
             var ctfile string
             var genfiles []string
+            var err error
             if filepath.Ext(file) != ".ct" {
                 ctfile, genfiles, err = ct.Filesfromgen(file)
                 if err != nil { log.Fatal(err) }
@@ -164,13 +182,13 @@ func main() {
                 genfiles, err = ct.Filesfromct(ctfile)
                 if err != nil { log.Fatal(err) }
             }
-	    // run ct or tc based on the dates of the files.  17``
-            if ok, err := shouldtc(ctfile, genfiles); ok {
-                err := ct.Tcwrite(genfiles, ctfile)
+	    // run ct or tc based on the -tc flag.  17``
+            if *fl_tc {
+                // TODO: warn if ct file is newer.  maybe in Tcwrite()?
+                err = ct.Tcwrite(genfiles, ctfile)
                 if err != nil { log.Fatal(err) }
             } else {
-                // TODO uncomment.  for now don't overwrite ct file, until it's safe.bm
-                // err := ct.Ctwrite(ctfile) 
+                err = ct.Ctwrite(ctfile) 
                 if err != nil { log.Fatal(err) }
             }
 	    //``16
