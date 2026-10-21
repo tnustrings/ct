@@ -66,8 +66,14 @@ func Tcwrite(genfiles []string, ctfile string) error {
     f, err := os.Create(ctfile)
     if err != nil { return err }    
     defer f.Close()
+    
+    // write the content into the ctfile
     _, err = f.WriteString(tcout)
     if err != nil { return err }
+    
+    // say which file was written
+    fmt.Println(ctfile)
+    
     return nil
 }
 
@@ -90,24 +96,15 @@ func Tc(genfiles []string) (string, error) {
         b, _ := os.ReadFile(genfile)
         text := string(b)
         a := strings.Split(text, "\n") // TODO generic line split method?
-        // get the progamming language
-        prog := Getpl(conf, filepath.Ext(genfile))
+
+        // get the start line of the file after the ctheader.
+        _, istart, err := Ctheader(genfile)
+        if err != nil { return "", err }
         
-        // make Line instances.  skip the ct header.
-        skip := true
-        afterheaderend := false
+        // make Line instances, starting from the istart line.
         for j, l := range a {
-            // skip lines before and including the first `` line.
-            if skip && isctheaderend(l, prog) {
-                afterheaderend = true
-                continue
-            }
-            // skip empty lines after header {
-            if skip && afterheaderend && strings.TrimSpace(l) != "" {
-                skip = false // don't skip anymore
-                //continue // but skip this line still
-            }
-            if skip { continue }
+            // skip the header
+            if j < istart { continue } 
             
             // make a Line and append it
             line := Line{Txt: l, Igen: j, Genfile: genfile}
@@ -122,6 +119,7 @@ func Tc(genfiles []string) (string, error) {
     for _, l := range lines {
         line := l.Txt
         //fmt.Println(strconv.Itoa(i) + ": " + line)
+        //fmt.Println(line)
         // get the programming language from the file extension.
         prog := Getpl(conf, filepath.Ext(l.Genfile))
 
@@ -339,21 +337,28 @@ func istxtsepingen(line string, prog *Prog) bool {
     return re.MatchString(line)
 }
 
-// ctheaderendre fishes for the last line of the ct header. it contains a placeholder %s for the comment mark.
-var ctheaderendre = "^%s`` (.*)$"
+// ctheaderlinere fishes for the ``ct lines in the first comment block. it contains a placeholder %s for the comment mark.
+var ctheaderlinere = "^%s``ct (\\w+) (.*)$"
 
-// isctheaderend says whether this line is the last line of the ct header, that's a line starting with `` and containing the name of the ct file and all generated files.
-func isctheaderend(line string, prog *Prog) bool {
-    re := regexp.MustCompile(fmt.Sprintf(ctheaderendre, prog.Cmtmark))
+// isctheaderline says whether this line is a ``ct line.
+func isctheaderline(line string, prog *Prog) bool {
+    re := regexp.MustCompile(fmt.Sprintf(ctheaderlinere, prog.Cmtmark))
     return re.MatchString(line)
 }
 
-// ctheaderfiles gets the files list from a ctheaderend line.
-func ctheaderfiles(line string, prog *Prog) []string {
-    re := regexp.MustCompile(fmt.Sprintf(ctheaderendre, prog.Cmtmark))
+// extractctheaderline returns the first word after ``ct and the rest of the line as two strings.
+func extractctheaderline(line string, prog *Prog) (string, string) {
+    re := regexp.MustCompile(fmt.Sprintf(ctheaderlinere, prog.Cmtmark))
     match := re.FindStringSubmatch(line)
-    if len(match) < 1 { return []string{} }
-    return strings.Split(match[1], " ") // TODO quote-sensitive split?
+    return match[1], match[2]
+}
+
+// blankre matches a line containing only whitespace.
+var blankre = regexp.MustCompile(`^\s*$`)
+
+// isblank says if a line contains only whitespace.
+func isblank(line string) bool {
+    return blankre.MatchString(line)
 }
 
 // cmttxt returns whatever text is behind the first comment mark in the line.
@@ -394,48 +399,86 @@ func maketxt(cmt []Line, prog *Prog) []Line {
 
 
 // Filesfromgen returns the paths of associated files (ct file and
-// generated files) from the header of a generated file. a header line would be:
-// #`` myprog.ct gen1.py gen2.py 
+// generated files) from the header of a generated file. the header line would be:
+// #``ct files myprog.ct gen1.py gen2.py 
 func Filesfromgen(genfile string) (string, []string, error) {
+
+    ctheader, _, err := Ctheader(genfile)
+    if err != nil { return "", []string{}, err }
+
+    // if no files found, error.
+    if _, ok := ctheader["files"]; !ok { 
+        return "", []string{}, fmt.Errorf("no '``ct files' line in " + genfile)
+    }
+
+    filenames := strings.Split(ctheader["files"], " ")
+    if len(filenames) == 0 {
+        return "", []string{}, fmt.Errorf(genfile + ": list of filenames expected in '``ct files' line.")
+    }
+
+    // return the files as complete paths.
+    dir := fc.Dir(genfile)    
+    paths := []string{}
+    for _, path := range filenames {
+        if dir != "" { path = dir + "/" + path } // TODO okay so?
+        paths = append(paths, path)
+    }
+    return paths[0], paths[1:], nil
+}
+
+// Ctheader returns a map from the ``ct comment lines at the beginning of a generated file with the first word after ``ct as keys.  expected keys: version and files.  return also the index the line after the header where the file starts properly.
+func Ctheader(genfile string) (map[string]string, int, error) {
 
     // load the config
     conf, err := Loadconf()
-    if err != nil { return "", []string{}, nil }
+    if err != nil { return nil, 0, err }
 
     // get the file extension, dir, and load the programming language info.
     ext := filepath.Ext(genfile)
-    dir := fc.Dir(genfile)    
     prog := Getpl(conf, ext)
     
     // open the file and make a scanner.
     file, err := os.Open(genfile)
-    if err != nil { return "", []string{}, err }
+    if err != nil { return nil, 0, err }
     defer file.Close()
     scanner := bufio.NewScanner(file)
 
-    // read the lines, see whether a line matches the end of a ct header.
+    // skip blank lines.
     i := 0
     for scanner.Scan() {
         line := scanner.Text()
-        if isctheaderend(line, prog) {
-            // extract the file names from the end-of-header line.
-            filenames := ctheaderfiles(line, prog)
-            if len(filenames) == 0 {
-                return "", []string{}, fmt.Errorf(genfile + ": list of filenames expected in line " + strconv.Itoa(i+1))
-            }
-            // return the files as complete paths.
-            paths := []string{}
-            for _, path := range filenames {
-                if dir != "" { path = dir + "/" + path } // TODO okay so?
-                paths = append(paths, path)
-            }
-            return paths[0], paths[1:], nil
+        if !isblank(line) { break }
+        i++
+    }
+
+    ctheader := make(map[string]string)
+
+    // we're in the header as long as we're in the first comment block.
+    inheader := true
+
+    // read the lines of the first comment block, fill in the ctheader map.
+    for scanner.Scan() {
+        line := scanner.Text()
+
+        // if we're not in the comment anymore, we're not in the header anymore.
+        if !iscmt(line, prog) {
+            inheader = false
+        }
+        if !inheader && !isblank(line) {
+            // this is the first non-blank line after the header, the file starts here.
+            break
+        }
+        if isctheaderline(line, prog) {
+            // as long as we're in the header, put all the ``ct lines into the ctheader map.
+            key, rest := extractctheaderline(line, prog) 
+            ctheader[key] = rest
         }
         i++
     }
-    // if no ct line found, error.
-    return "", []string{}, fmt.Errorf("no ct-line in " + genfile)
+
+    return ctheader, i, nil
 }
+
 
 // Filesfromct returns the paths of the files generated from a ct file.
 func Filesfromct(ctfile string) ([]string, error) {
