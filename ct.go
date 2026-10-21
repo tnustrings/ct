@@ -323,10 +323,10 @@ func getleadingspace(line string) string {
     return leadspacere.FindString(line)
 }
 
-// isdeclaration returns whether a path (with or without leading ``) is followed by a colon : denoting chunk declaration.
+// isdeclaration returns whether a path (with or without leading `` and trailing prog-lang hashtag) is followed by a colon : denoting chunk declaration.
 func isdeclaration(path string) bool {
     // a colon at the path end indicates that this is a declaration.
-    re := regexp.MustCompile(":\\s*$")
+    re := regexp.MustCompile(`:\s*(#\w+\s*)?$`)
     return re.MatchString(path)
 }
 
@@ -465,11 +465,16 @@ func assemble(n *node, leadingspace string, rootname string, proglang string, ct
 // addopening adds text lines, chunk tag and chunk number as comment as to be able to reconstruct the ct file
 func addopening(chunk *Chunk, openingghost bool, leadingspace string, prog *Prog) []Line {
     out := []Line{}
-    for i, line := range(chunk.Txta) {
+    
+    // the text before the chunk might have been blank, in this case chunk.Txta doesn't contain any lines.  make a blank dummy line in that case, so that the following loop works.
+    txta := chunk.Txta
+    if len(txta) == 0 { txta = append(txta, Line{Txt: "", Ict: chunk.Tag.Ict}) }
+    
+    for i, line := range(txta) {
         // make a comment from the between-chunk text
         txt := leadingspace + prog.Cmtmark + " " + line.Txt
 	// add the chunk tag to the last comment line
-	if i == len(chunk.Txta)-1 {
+	if i == len(txta)-1 {
             // add the number of the chunk
 	    txt += "  " + itoa(chunk.Nct)
             // if this chunk opens a ghost node add a . before the ``
@@ -1096,8 +1101,11 @@ func Ct(text string, ctfile string) error {
         header = append(header, Line{Txt: txt})
         txt = cmtmark + " when editing this file leave the `` tags."
         header = append(header, Line{Txt: txt})
+        // add a version line.  TODO get version dynamically
+        txt = cmtmark + "``ct version 0.1.1"
+        header = append(header, Line{Txt: txt})
         // add a header line that is read by tc with the name of the ct file and all generated files.
-        txt = cmtmark + "`` " + ctfile
+        txt = cmtmark + "``ct files " + ctfile
         for _, genf := range keys(roots) { txt += " " + genf }
         header = append(header, Line{Txt: txt})
         // add an empty line
