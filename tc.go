@@ -120,6 +120,7 @@ func Tc(genfiles []string) (string, error) {
         line := l.Txt
         //fmt.Println(strconv.Itoa(i) + ": " + line)
         //fmt.Println(line)
+	
         // get the programming language from the file extension.
         prog := Getpl(conf, filepath.Ext(l.Genfile))
 
@@ -276,7 +277,7 @@ func printstack() {
 }
 
 // chunkopenre is the string from which the chunk open regexp is built. it has placeholders %s to insert the opening (and if needed closing) comment marks for the programming language.  it holds four capture groups: the comment text, the chunk nct, a dot if this line opens a ghost node, and the chunk tag.  if one of the optional capture groups is not used, the others retain their positions in string array returned by FindStringSubmatch.
-var chunkopenre = "^\\s*%s (.*)\\s+(\\d+)?(\\.)?(``.*)\\s*%s\\s*"
+var chunkopenre = "^\\s*%s (.*)  (\\d+)?(\\.)?(``.*)\\s*%s\\s*"
 
 // ischunkopening says whether this comment line is chunk opening.  a minimal chunk opening line is
 // # ``
@@ -356,11 +357,11 @@ func isctheaderline(line string, prog *Prog) bool {
     return re.MatchString(line)
 }
 
-// extractctheaderline returns the first word after ``ct and the rest of the line as two strings.
+// extractctheaderline returns the first word after ``ct and the rest of the line (spaces trimmed) as two strings.
 func extractctheaderline(line string, prog *Prog) (string, string) {
     re := makecmtre(ctheaderlinere, prog)
     match := re.FindStringSubmatch(line)
-    return match[1], match[2]
+    return match[1], strings.TrimSpace(match[2])
 }
 
 // blankre matches a line containing only whitespace.

@@ -8,7 +8,7 @@ version = $(shell git tag | sort -V | tail -1 | tr -d v)
 
 all: bin/ct 
 
-bin/ct: bin/ctmini cmd/ct/main.ct ct.go tc.go org.ct tex.ct conf/*
+bin/ct: bin/ctmini cmd/ct/main.ct ct.go tc.go org.ct tex.ct conf/* ct_test.ct
 	# make a mini-ct that doesn't depend on ct code itsself, use it to build the ct code for the main program
 	./bin/ctmini cmd/ct/main.ct
 	./bin/ctmini org.ct
