@@ -28,11 +28,11 @@ main kicks off tangling or tex generating.
 
 ``/main:
 func main() {
-  ``flags``
-  ``tex tmpl``
-  ``read``
-  ``convert org``
-  ``compile``
+    ``flags``
+    ``tex tmpl``
+    ``read``
+    ``convert org``
+    ``compile``
 }
 ``
 

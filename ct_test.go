@@ -1,8 +1,8 @@
-// ct_test.go was generated from ct_test.ct. 
+// ct_test.go was generated from ct_test.ct.
 // if you edit ct_test.go, run `ct -tc ct_test.go` afterwards to update ct_test.ct.
 // when editing this file leave the `` tags.
-//``ct version 0.1.1
-//``ct files ct_test.ct ct_test.go
+//``ct version 0.1.1 
+//``ct files ct_test.ct ct_test.go 
 
 // ct_test tests ct
 // 

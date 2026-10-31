@@ -1,8 +1,8 @@
-// org.go was generated from org.ct. 
+// org.go was generated from org.ct.
 // if you edit org.go, run `ct -tc org.go` afterwards to update org.ct.
 // when editing this file leave the `` tags.
-//``ct version 0.1.1
-//``ct files org.ct org.go
+//``ct version 0.1.1 
+//``ct files org.ct org.go 
 
 // # org
 // 

@@ -472,7 +472,7 @@ func addopening(chunk *Chunk, openingghost bool, leadingspace string, prog *Prog
     
     for i, line := range(txta) {
         // make a comment from the between-chunk text
-        txt := leadingspace + prog.Cmtmark + " " + line.Txt
+        txt := line.Txt
 	// add the chunk tag to the last comment line
 	if i == len(txta)-1 {
             // add the number of the chunk
@@ -482,6 +482,8 @@ func addopening(chunk *Chunk, openingghost bool, leadingspace string, prog *Prog
             // add the tag
             txt += chunk.Tag.Txt
 	}
+	// put comment marks in
+        txt = leadingspace + encmt(txt, prog)
 	out = append(out, Line{Txt: txt, Ict: line.Ict})
     }
     return out
@@ -492,22 +494,37 @@ func addclosing(chunk *Chunk, leadingspace string, prog *Prog) []Line {
     out := []Line{}
     for _, line := range(chunk.Txtb) {
         // add the text after a chunk
-        txt := leadingspace + prog.Cmtmark + " " + line.Txt
+        txt := leadingspace + encmt(line.Txt, prog)
 	out = append(out, Line{Txt:txt, Ict:line.Ict})
     }
     // add a text sep line if there was any txtb
     if len(chunk.Txtb) > 0 {
-        txt := leadingspace + prog.Cmtmark + "``="
+        txt := leadingspace + encmtPad("``=", prog, "")
         out = append(out, Line{Txt: txt})
     }
     return out
+}
+
+// encmt turns a line into a comment for programming language.
+func encmt(line string, prog *Prog) string {
+    return encmtPad(line, prog, " ")
+}
+
+// encmtPad turns a line into comment using padding.
+func encmtPad(line string, prog *Prog, pad string) string {
+    // if there is a single comment mark, use it
+    if prog.Cmtmark != "" {
+        return prog.Cmtmark + pad + line
+    } else { // else use opening and closing mark, e.g. for html
+        return prog.Cmtopen + pad + line + pad + prog.Cmtclose
+    }
 }
 
 // addnodeclose adds a comment to signify that the node that started with chunk nct is closed with lastchunk.
 func addnodeclose(nct int, lastchunk *Chunk, leadingspace string, prog *Prog) [] Line {
     out := []Line{}
     // add a comment signifying chunk closure
-    txt := leadingspace + prog.Cmtmark + "``" + itoa(nct)
+    txt := leadingspace + encmtPad("``" + itoa(nct), prog, "")
     out = append(out, Line{Txt:txt, Ict: lastchunk.Tag.Ict + len(lastchunk.Code)+1})
     return out
 }
@@ -1091,22 +1108,23 @@ func Ct(text string, ctfile string) error {
 	// check what node tree was generated
         //printtree(roots[filename])
 
-        // add a general header line.
-        cmtmark := Getpl(conf, proglang).Cmtmark
+        prog := Getpl(conf, proglang)
+        // collect header lines
         header := []Line{}
-        txt := cmtmark + " " + filename + " was generated from " + ctfile + ". "
+        txt := encmt(filename + " was generated from " + ctfile + ".", prog)
         header = append(header, Line{Txt: txt})
         //txt = cmtmark + " you can edit " + ctfile + " or " + filename + " and then run `ct " + ctfile + "` to update the other file."
-        txt = cmtmark + " if you edit " + filename + ", run `ct -tc " + filename + "` afterwards to update " + ctfile + "."
+        txt = encmt("if you edit " + filename + ", run `ct -tc " + filename + "` afterwards to update " + ctfile + ".", prog)
         header = append(header, Line{Txt: txt})
-        txt = cmtmark + " when editing this file leave the `` tags."
+        txt = encmt("when editing this file leave the `` tags.", prog)
         header = append(header, Line{Txt: txt})
         // add a version line.  TODO get version dynamically
-        txt = cmtmark + "``ct version 0.1.1"
+        txt = encmtPad("``ct version 0.1.1 ", prog, "")
         header = append(header, Line{Txt: txt})
         // add a header line that is read by tc with the name of the ct file and all generated files.
-        txt = cmtmark + "``ct files " + ctfile
+        txt = "``ct files " + ctfile
         for _, genf := range keys(roots) { txt += " " + genf }
+	txt = encmtPad(txt + " ", prog, "")
         header = append(header, Line{Txt: txt})
         // add an empty line
         header = append(header, Line{Txt: ""})

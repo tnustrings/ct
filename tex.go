@@ -1,8 +1,8 @@
-// tex.go was generated from tex.ct. 
+// tex.go was generated from tex.ct.
 // if you edit tex.go, run `ct -tc tex.go` afterwards to update tex.ct.
 // when editing this file leave the `` tags.
-//``ct version 0.1.1
-//``ct files tex.ct tex.go
+//``ct version 0.1.1 
+//``ct files tex.ct tex.go 
 
 // # tex
 // 

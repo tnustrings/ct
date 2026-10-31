@@ -19,6 +19,12 @@
 	    
 	},
 	{
+	    "name": "css",
+	    "ext": ["css"],
+	    "cmtopen": "/*",
+	    "cmtclose": "*/"
+	},
+	{
 	    "name": "go",
 	    "ext": ["go"],
 	    "fncre": "func\\s+(?P<name>[\\w\\d_]+).*\\(.*\\).*{", 

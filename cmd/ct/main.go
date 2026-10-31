@@ -1,8 +1,8 @@
-// main.go was generated from main.ct. 
+// main.go was generated from main.ct.
 // if you edit main.go, run `ct -tc main.go` afterwards to update main.ct.
 // when editing this file leave the `` tags.
-//``ct version 0.1.1
-//``ct files main.ct main.go
+//``ct version 0.1.1 
+//``ct files main.ct main.go 
 
 // # main
 // 
@@ -25,9 +25,9 @@ import (
 // 
 // main kicks off tangling or tex generating.  2``/main:
 func main() {
-  // # flags
-  // 
-  // get the flags.  3``./flags:
+    // # flags
+    // 
+    // get the flags.  3``./flags:
     fl_tex := flag.Bool("tex", false, "print doc as latex")
     fl_from_org := flag.Bool("from_org", false, "input is a .org file")
     fl_mdtotex := flag.String("mdtotex", "", "for latex doc generation. a command to convert markdown between codechunks to tex, e.g. 'pandoc -f markdown -t latex'")
@@ -39,11 +39,11 @@ func main() {
     fl_tc := flag.Bool("tc", false, "run reverse: build ct file from generated files")
 
     flag.Parse()
-  // get the positional args.  4``
+    // get the positional args.  4``
     args := flag.Args()
-  // take the file as positional arg.
-  // 
-  // be able to handle more than one ct file?  5``
+    // take the file as positional arg.
+    // 
+    // be able to handle more than one ct file?  5``
     var file string
     switch len(args) {
     case 0:
@@ -52,9 +52,9 @@ func main() {
     case 1:
     	file = args[0]
     }
-  //``3
-  // if no ct file was given and the -tex flag is set generate the latex
-  // template and header.  6``/main/tex tmpl:
+    //``3
+    // if no ct file was given and the -tex flag is set generate the latex
+    // template and header.  6``/main/tex tmpl:
     if file == "" {
         if *fl_tex {
 	    // if no names for the ouput files were given, give an error asking for a
@@ -85,22 +85,22 @@ func main() {
 	}
         return
     }
-  //``6
-  // ## read and convert
-  // 
-  // if a codetext file was given, read it.  10``/main/read:
+    //``6
+    // ## read and convert
+    // 
+    // if a codetext file was given, read it.  10``/main/read:
     b, _ := os.ReadFile(file)
     text := string(b)
-  //``10
-  // should the text be converted from org to ct?  11``/main/convert org:
+    //``10
+    // should the text be converted from org to ct?  11``/main/convert org:
     if *fl_from_org {
         text = ct.Orgtoct(text)
         // print(text)
     }
-  //``11
-  // ## compile
-  // 
-  // now comes the part of main involving assembly of the given ct file.  12``/main/compile:
+    //``11
+    // ## compile
+    // 
+    // now comes the part of main involving assembly of the given ct file.  12``/main/compile:
     if *fl_l != "" { 
         // run ct or tc based on the dates of the files.
         // 
@@ -195,7 +195,7 @@ func main() {
 	    //``16
 	}
     } 
-  //``12
+    //``12
 }
 //``2
 // # checkoverwrite

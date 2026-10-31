@@ -275,8 +275,8 @@ func printstack() {
     fmt.Println()
 }
 
-// chunkopenre is the string from which the chunk open regexp is built. it has a placeholder %s to dynamically insert the comment mark for the programming language.  it holds four capture groups: the comment text, the chunk nct, a dot if this line opens a ghost node, and the chunk tag.  if one of the optional capture groups is not used, the others retain their positions in string array returned by FindStringSubmatch.
-var chunkopenre = "^\\s*%s (.*)\\s+(\\d+)?(\\.)?(``.*)\\s*"
+// chunkopenre is the string from which the chunk open regexp is built. it has placeholders %s to insert the opening (and if needed closing) comment marks for the programming language.  it holds four capture groups: the comment text, the chunk nct, a dot if this line opens a ghost node, and the chunk tag.  if one of the optional capture groups is not used, the others retain their positions in string array returned by FindStringSubmatch.
+var chunkopenre = "^\\s*%s (.*)\\s+(\\d+)?(\\.)?(``.*)\\s*%s\\s*"
 
 // ischunkopening says whether this comment line is chunk opening.  a minimal chunk opening line is
 // # ``
@@ -284,13 +284,13 @@ var chunkopenre = "^\\s*%s (.*)\\s+(\\d+)?(\\.)?(``.*)\\s*"
 // # my last line of txta  3``/my/path:
 // denoting that this is the third chunk and its tag is ``/my path:
 func ischunkopening(line string, prog *Prog) bool {
-    re := regexp.MustCompile(fmt.Sprintf(chunkopenre, prog.Cmtmark))
+    re := makecmtre(chunkopenre, prog)
     return re.MatchString(line)
 }
 
 // parseopening parses a comment line opening a chunk. it returns (txt, nct, dot, tag), where txt is the text of the comment line, nct is the nct of the opened chunk, dot is "." if the chunk resulted from opening a ghost node and tag is the tag (path) of the chunk.
 func parseopening(line string, prog *Prog) (string, int, string, string) {
-    re := regexp.MustCompile(fmt.Sprintf(chunkopenre, prog.Cmtmark))
+    re := makecmtre(chunkopenre, prog)
     // get the matches from the capture groups.  matches retain their position if optional capture groups are not used.
     matches := re.FindStringSubmatch(line)
     // parse the nct to int
@@ -301,18 +301,18 @@ func parseopening(line string, prog *Prog) (string, int, string, string) {
     return matches[1], nct, matches[3], matches[4]
 }
     
-// chunkclosere is the string from which the chunk close regexp is built. like chunkopenre, it has a placeholder %s for the comment mark used by the programming language.
-var chunkclosere = "^\\s*%s``(\\d+)?\\s*$"
+// chunkclosere is the string from which the chunk close regexp is built. like chunkopenre, it has placeholders %s for the comment mark(s) used by the programming language.
+var chunkclosere = "^\\s*%s``(\\d+)?%s\\s*$"
 
 // isnodeclosing says whether this comment line closes a note (the chunks that make up a node are closed implicitly by the next chunk).  a node-close line consists of the last line of code in this chunk followed by a comment marker immediately followed by `` (without whitespace) followed by an optional number referencing the opening chunk in the node this line closes.
 func isnodeclosing(line string, prog *Prog) bool {
-    re := regexp.MustCompile(fmt.Sprintf(chunkclosere, prog.Cmtmark))
+    re := makecmtre(chunkclosere, prog)
     return re.MatchString(line)
 }
 
 // parsenodeclose parses a node-close line and returns the nct in this line denoting the first chunk in the closed node.
 func parsenodeclose(line string, prog *Prog) int {
-    re := regexp.MustCompile(fmt.Sprintf(chunkclosere, prog.Cmtmark))
+    re := makecmtre(chunkclosere, prog)
     matches := re.FindStringSubmatch(line)
     // parse the nct to int
     nct := -1
@@ -322,33 +322,43 @@ func parsenodeclose(line string, prog *Prog) int {
     return nct    
 }
 
-// cmtre is the string from which the comment regexp is built. it has a placeholder %s for the comment mark used by the programming language and a capture group to capture the comment text.
-var cmtre = "^\\s*%s\\s*(.*)$"
+// cmtre is the string from which the comment regexp is built. it has a placeholder %s for the comment mark (and a second placeholder for optional closing marks) and a capture group to capture the comment text.
+var cmtre = "^\\s*%s\\s*(.*)\\s*%s$"
 
 // iscmt says whether this line is a comment in the given programming lang.
 func iscmt(line string, prog *Prog) bool {
-    re := regexp.MustCompile(fmt.Sprintf(cmtre, prog.Cmtmark))
+    re := makecmtre(cmtre, prog)
     return re.MatchString(line)
+}
+
+// makecmtre fills the placeholders in a comment regex string depending on whether the programming language has a single comment mark or needs opening and closing marks.
+func makecmtre(restr string, prog *Prog) *regexp.Regexp {
+    // if prog lang has a single comment mark, leave the closing mark blank.
+    if prog.Cmtmark != "" {
+        return regexp.MustCompile(fmt.Sprintf(restr, prog.Cmtmark, ""))
+    } else {
+        return regexp.MustCompile(fmt.Sprintf(restr, prog.Cmtopen, prog.Cmtclose))
+    }
 }
 
 // istxtsepingen says whether a line is the text seperator ``= that divides text after and before a chunk in generated code.
 func istxtsepingen(line string, prog *Prog) bool {
-    re := regexp.MustCompile(fmt.Sprintf("^\\s*%s``=\\s*$", prog.Cmtmark))
+    re := makecmtre("^\\s*%s``=\\s*%s\\s*$", prog)
     return re.MatchString(line)
 }
 
 // ctheaderlinere fishes for the ``ct lines in the first comment block. it contains a placeholder %s for the comment mark.
-var ctheaderlinere = "^%s``ct (\\w+) (.*)$"
+var ctheaderlinere = "^%s``ct (\\w+) (.*)%s\\s*$"
 
 // isctheaderline says whether this line is a ``ct line.
 func isctheaderline(line string, prog *Prog) bool {
-    re := regexp.MustCompile(fmt.Sprintf(ctheaderlinere, prog.Cmtmark))
+    re := makecmtre(ctheaderlinere, prog)
     return re.MatchString(line)
 }
 
 // extractctheaderline returns the first word after ``ct and the rest of the line as two strings.
 func extractctheaderline(line string, prog *Prog) (string, string) {
-    re := regexp.MustCompile(fmt.Sprintf(ctheaderlinere, prog.Cmtmark))
+    re := makecmtre(ctheaderlinere, prog)
     match := re.FindStringSubmatch(line)
     return match[1], match[2]
 }
@@ -363,7 +373,7 @@ func isblank(line string) bool {
 
 // cmttxt returns whatever text is behind the first comment mark in the line.
 func cmttxt(line string, prog *Prog) string {
-    re := regexp.MustCompile(fmt.Sprintf(cmtre, prog.Cmtmark))
+    re := makecmtre(cmtre, prog)
     matches := re.FindStringSubmatch(line)
     return matches[1]
 }
