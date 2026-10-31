@@ -12,19 +12,19 @@ here's an example:
 begin a file named foo.py.
 
 ``//foo.py: #py
-print("ooh, baby you're a fool to py") 
-if bar {
-  ``bar``
-}
+import sys
+print("ooh, baby you're a foo to py.") 
+if len(sys.argv) > 1:
+    ``bar``
 ``
 write something code in the ``bar`` chunk:
 
 ``/bar:
-  print("hi, bar")
+    print("hi, " + sys.argv[1])
 ``
 ```
 
-if this is saved as `mycode.ct`, extract the code by calling `ct mycode.ct`.
+if this is saved as `minifoo.ct`, extract the code by calling `ct minifoo.ct`.
 
 ## install
 
@@ -52,10 +52,10 @@ this is a longer ct example.
 begin a file named foo.py.
 
 ``//foo.py: #py
-print("ooh, baby you're a fool to py") 
-if bar {
-  ``bar``
-}
+import sys
+print("ooh, baby you're a foo to py") 
+if len(sys.argv) > 1:
+    ``bar``
 ``
 
 the line
@@ -66,66 +66,70 @@ opens a code chunk named //foo.py. the two slashes // mark foo.py as a
 file. the colon : indicates that this chunk is opened for the first
 time. #py signals syntax highlighting, you can leave it out.
 
-the chunk //foo.py references a child-chunk, ``bar``. we put code into
-bar by opening a second code chunk, /bar.
+the chunk //foo.py references a child-chunk, ``bar``. put code into
+the bar chunk by opening a second code chunk, /bar.
 
 ``/bar: #py
-   print("my bar")
-   ``baz``
-   ``boz``
+    print("welcome to bar, " + sys.argv[1])
+    ``baz``
+    ``boz``
 ``
 
-bar in turn references two child chunks, ``baz`` and ``boz``. to put
-code into baz, you could use the full path /bar/baz or the relative
-path starting from bar, ./baz.
+bar references two child chunks, ``baz`` and ``boz``. to put code into
+baz, use the full path /bar/baz or the relative path from bar, ./baz.
 
 ``./baz: #py
-   my = "baz code"
+    my = "baz code"
 ``
 
-if you'd like to stay in the chunk you were in before you can just
-write the two ticks `` and leave out its path.
+to stay in the same chunk leave out the path.
 
 `` #py
-   print("still in baz")
+    print("still in baz")
 ``
 
-if you'd like to change to baz's sibling chunk boz, you could say
-../boz, /bar/boz, //foo.py/bar/boz or, if boz's name is unique in foo,
-/*/boz.
+to change into baz's sibling chunk boz, say ../boz.
 
 ``../boz: #py
-   print("in boz")
+    print("in boz")
 ``
 
-if there's a loop or so, and you'd like the next unnamed chunk to be
-inside of the loop you can specify where it should be put with ``.``:
+instead of ../boz you could get to the boz chunk with /bar/boz,
+//foo.py/bar/boz or, if boz's name is unique in foo, /*/boz.
+
+if there's a loop or so, and the following code should go into the
+loop, specify where the code should go with ``.``:
 
 `` #py
-   for i = 0; i < n; i++ {
-      ``.``
-   }
+    for i in range(10):
+        ``.``
 ``
 
-now the following unnamed chunk won't be appended to the end of the
-previous chunk but instead where the ``.`` is.
+now the following chunk will be appended where the ``.`` is.
 
 `` #py
-   print("inside the loop")
+        print("inside the loop")
 ``
 
-you need to exit this 'ghost'-chunk via ../ to put code after the
-loop again:
+here, this doesn't make much of a difference, but it can come in handy
+for c-style loops that come with opening and closing brackets:
+
+for (i = 0; i < 10; i++) {
+    ``.``
+}
+
+exit the ``.`` ghost-chunk with ../ to continue code after the loop
+(or use the explicit path /bar/boz).
 
 ``../ #py
-   print("after the loop")
+    print("after the loop")
 ``
 
-we open a second file, named zoo.py.
+open a second file, named zoo.py.
 
 ``//zoo.py: #py
-  welcome to the zoo
-  ``dolphins``
+print("welcome to the zoo.")
+``dolphins``
 ``
 
 chunk paths assume to start at the last opened file (unless the
@@ -133,19 +137,20 @@ filename is explicitly given). our last opened file is zoo.py now, so
 the path /dolphins adds code to zoo.py.
 
 ``/dolphins: #py
-  print("are there dolphins in the zoo?")
+print("are there dolphins in the zoo?")
 ``
 
-you can switch back to a chunk in foo.py like this:
+switch back to a chunk in foo.py like this. (notice that the colon is
+lacking cause we opened the chunk before).
 
 ``//foo.py/bar #py
-  print("hello bar again")
+    print("hello bar again")
 ``
 
-now our file is assumed to be foo.py again.
+now we are in foo.py again.
 
 ``
-  print("still in foo.py")
+    print("still in foo.py")
 ``
 
 ```

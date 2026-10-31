@@ -15,7 +15,10 @@ import (
 "io"
 //``14
 )
-// TestCtGen tests generating ct code.  2``/TestCtGen:
+// TestCtGen tests generating ct code.
+// 
+// if something in the code generating changed (including ct version),
+// manually update try/try_should.go and test/__init_should.py.  2``/TestCtGen:
 func TestCtGen(t *testing.T) {
     // for now take try.ct to generate code from ct.  3.``
     err := Ctwrite("try/try.ct")
@@ -46,7 +49,10 @@ func TestCtGen(t *testing.T) {
     //``3
 }
 //``2
-// TestTc tests reversing ct.  7``/TestTc:
+// TestTc tests reversing ct.
+// 
+// if something in the reverse output changed, update test/init_should.ct
+// manually.  7``/TestTc:
 func TestTc(t *testing.T) {
     // try for the init.ct of traction.  8``_:
     err := Tcwrite([]string{"test/__init__.py"}, "test/init.ct")
