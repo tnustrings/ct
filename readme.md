@@ -98,7 +98,7 @@ instead of ../boz you could get to the boz chunk with /bar/boz,
 //foo.py/bar/boz or, if boz's name is unique in foo, /*/boz.
 
 if there's a loop or so, and the following code should go into the
-loop, specify where the code should go with ``.``:
+loop, specify where the code should go with a ghost chunk ``.``:
 
 `` #py
     for i in range(10):
