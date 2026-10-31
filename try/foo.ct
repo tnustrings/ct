@@ -1,0 +1,104 @@
+begin a file named foo.py.
+
+``//foo.py: #py
+import sys
+print("ooh, baby you're a foo to py") 
+if len(sys.argv) > 1:
+    ``bar``
+``
+
+the line
+
+   ``//foo.py: #py
+
+opens a code chunk named //foo.py. the two slashes // mark foo.py as a
+file. the colon : indicates that this chunk is opened for the first
+time. #py signals syntax highlighting, you can leave it out.
+
+the chunk //foo.py references a child-chunk, ``bar``. put code into
+the bar chunk by opening a second code chunk, /bar.
+
+``/bar: #py
+    print("welcome to bar, " + sys.argv[1])
+    ``baz``
+    ``boz``
+``
+
+bar references two child chunks, ``baz`` and ``boz``. to put code into
+baz, use the full path /bar/baz or the relative path from bar, ./baz.
+
+``./baz: #py
+    my = "baz code"
+``
+
+to stay in the same chunk leave out the path.
+
+`` #py
+    print("still in baz")
+``
+
+to change into baz's sibling chunk boz, say ../boz.
+
+``../boz: #py
+    print("in boz")
+``
+
+instead of ../boz you could get to the boz chunk with /bar/boz,
+//foo.py/bar/boz or, if boz's name is unique in foo, /*/boz.
+
+if there's a loop or so, and the following code should go into the
+loop, specify where the code should go with a ghost chunk ``.``:
+
+`` #py
+    for i in range(10):
+        ``.``
+``
+
+now the following chunk will be appended where the ``.`` is.
+
+`` #py
+        print("inside the loop")
+``
+
+here, this doesn't make much of a difference, but it can come in handy
+for c-style loops that come with opening and closing brackets:
+
+for (i = 0; i < 10; i++) {
+    ``.``
+}
+
+exit the ``.`` ghost-chunk with ../ to continue code after the loop
+(or use the explicit path /bar/boz).
+
+``../ #py
+    print("after the loop")
+``
+
+open a second file, named zoo.py.
+
+``//zoo.py: #py
+print("welcome to the zoo.")
+``dolphins``
+``
+
+chunk paths assume to start at the last opened file (unless the
+filename is explicitly given). our last opened file is zoo.py now, so
+the path /dolphins adds code to zoo.py.
+
+``/dolphins: #py
+print("are there dolphins in the zoo?")
+``
+
+switch back to a chunk in foo.py like this. (notice that the colon is
+lacking cause we opened the chunk before).
+
+``//foo.py/bar #py
+    print("hello bar again")
+``
+
+now we are in foo.py again.
+
+``
+    print("still in foo.py")
+``
+

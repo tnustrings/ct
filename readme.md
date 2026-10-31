@@ -155,8 +155,9 @@ now we are in foo.py again.
 
 ```
 
-the file `foo.ct` contains the above example. you can assemble your
-code chunks into `foo.py` and `zoo.py` by saying `ct foo.ct`.
+the file [`try/foo.ct`](try/foo.ct) contains the above example. you
+can assemble your code chunks into `foo.py` and `zoo.py` by saying `ct
+try/foo.ct`.
 
 ## use
 
